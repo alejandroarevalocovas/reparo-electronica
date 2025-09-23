@@ -27,8 +27,11 @@ import os
 #     f"{db_conf['host']}:{db_conf['port']}/{db_conf['name']}"
 # )
 
+
+
 # ---------- Cargar configuración Render ----------
 
+# DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALGORITHM = os.environ.get("ALGORITHM", "HS256")
@@ -38,7 +41,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # ---------- TOKEN ----------
-#token_conf = config["token"]
+# token_conf = config["token"]
 # SECRET_KEY = token_conf['secret_key']
 # ALGORITHM = token_conf['algorithm']
 # ACCESS_TOKEN_EXPIRE_MINUTES = token_conf['expire']
@@ -178,6 +181,10 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"message": "API de servicio técnico 🚀"}
+
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}
 
 # ---------- LOGIN ----------
 @app.post("/login")
