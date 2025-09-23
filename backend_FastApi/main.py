@@ -30,7 +30,6 @@ import os
 
 
 # ---------- Cargar configuración Render ----------
-
 # DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -183,6 +182,7 @@ def root():
     return {"message": "API de servicio técnico 🚀"}
 
 @app.get("/ping")
+@app.head("/ping")
 def ping():
     return {"status": "ok"}
 
