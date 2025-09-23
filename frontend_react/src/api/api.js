@@ -1,5 +1,6 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "http://127.0.0.1:8000", // tu backend FastAPI
+  //baseURL: "http://127.0.0.1:8000", // local
+  baseURL: "https://reparo-electronica.onrender.com", // Render
 });
