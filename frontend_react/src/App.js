@@ -1,12 +1,18 @@
+// src/App.js
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import PedidosList from "./pages/PedidosList";
+import ClientesList from "./pages/ClientesList"; // <--- nuevo import
 import Login from "./pages/Login";
 
 function App() {
-  //const [user, setUser] = React.useState(localStorage.getItem("token") || null);
-  const [user, setUser] = React.useState(localStorage.getItem("username") || null);
+  const [user, setUser] = React.useState(
+    localStorage.getItem("token") && localStorage.getItem("username")
+      ? localStorage.getItem("username")
+      : null
+  );
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
@@ -16,15 +22,24 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {!user ? (
-          <Route path="*" element={<Login onLogin={() => setUser("admin")} />} />
-        ) : (
-          <Route path="/" element={<Layout user={user} onLogout={handleLogout} />}>
-            <Route index element={<PedidosList />} /> {/* / */}
-            <Route path="pedidos" element={<PedidosList />} /> {/* /pedidos */}
-            {/* Aquí puedes añadir más páginas */}
-          </Route>
-        )}
+        {/* Login */}
+        <Route
+          path="/login"
+          element={!user ? <Login onLogin={setUser} /> : <Navigate to="/pedidos" />}
+        />
+
+        {/* Layout y rutas protegidas */}
+        <Route
+          path="/"
+          element={user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+        >
+          <Route index element={<PedidosList />} />           {/* / */}
+          <Route path="pedidos" element={<PedidosList />} />  {/* /pedidos */}
+          <Route path="clientes" element={<ClientesList />} />{/* /clientes */}
+        </Route>
+
+        {/* Cualquier otra ruta */}
+        <Route path="*" element={<Navigate to={user ? "/pedidos" : "/login"} />} />
       </Routes>
     </BrowserRouter>
   );

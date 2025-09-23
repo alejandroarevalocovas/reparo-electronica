@@ -11,12 +11,12 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log("username",username)
+      //console.log("username",username)
       const res = await api.post("/login", { username, password });
       //console.log("RES",res)
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("username", username);
-      onLogin();
+      onLogin(username);
       navigate("/pedidos");
     } catch (err) {
       console.error("ERR", err);
