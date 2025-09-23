@@ -165,6 +165,7 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",  # React
     "http://127.0.0.1:3000",  # Otra forma de localhost
+    "https://reparo-electronica-frontend.onrender.com",
 ]
 app.add_middleware(
     CORSMiddleware,
