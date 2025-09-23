@@ -1,0 +1,11 @@
+database:
+  user: alex
+  password: Adrodazn4
+  host: 127.0.0.1
+  port: 5432
+  name: reparo_electronica
+
+token:
+  secret_key: 1g2n3js6dm6lcd9fds0kdisocnfken34SSCCN344
+  algorithm: HS256
+  expire: 600
