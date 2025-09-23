@@ -1,4 +1,6 @@
-#uvicorn main:app --reload
+# main.py
+# uvicorn main:app --reload
+
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date

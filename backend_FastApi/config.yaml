@@ -1,9 +1,28 @@
+############ LOCAL ##############
+# database:
+#   user: alex
+#   password: Adrodazn4
+#   host: 127.0.0.1
+#   port: 5432
+#   name: reparo_electronica
+
+############ INTERNAL ##############
+# postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a/reparo_electronica_db
+# database:
+#   user: reparo_electronica_db_user
+#   password: e02ASAGPUbVg8fpWLFNj77qkmtyZel1s
+#   host: dpg-d398jms9c44c73anjpjg-a
+#   port: 5432
+#   name: reparo_electronica_db
+
+############ EXTERNAL ##############
+# postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db
 database:
-  user: alex
-  password: Adrodazn4
-  host: 127.0.0.1
+  user: reparo_electronica_db_user
+  password: e02ASAGPUbVg8fpWLFNj77qkmtyZel1s
+  host: dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com
   port: 5432
-  name: reparo_electronica
+  name: reparo_electronica_db
 
 token:
   secret_key: 1g2n3js6dm6lcd9fds0kdisocnfken34SSCCN344
