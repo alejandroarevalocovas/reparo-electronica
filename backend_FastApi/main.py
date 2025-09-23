@@ -13,27 +13,35 @@ from pathlib import Path
 from datetime import datetime, timedelta, date
 from jose import jwt, JWTError
 from fastapi.middleware.cors import CORSMiddleware
-# ---------- Cargar configuración ----------
-config_path = Path(__file__).parent / "config.yaml"
+import os
+# ---------- Cargar configuración local ----------
+# config_path = Path(__file__).parent / "config.yaml"
 
-with open(config_path, "r") as f:
-    config = yaml.safe_load(f)
+# with open(config_path, "r") as f:
+#     config = yaml.safe_load(f)
 
-db_conf = config["database"]
+# db_conf = config["database"]
 
-DATABASE_URL = (
-    f"postgresql://{db_conf['user']}:{db_conf['password']}@"
-    f"{db_conf['host']}:{db_conf['port']}/{db_conf['name']}"
-)
+# DATABASE_URL = (
+#     f"postgresql://{db_conf['user']}:{db_conf['password']}@"
+#     f"{db_conf['host']}:{db_conf['port']}/{db_conf['name']}"
+# )
+
+# ---------- Cargar configuración Render ----------
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+ALGORITHM = os.environ.get("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # ---------- TOKEN ----------
-token_conf = config["token"]
-SECRET_KEY = token_conf['secret_key']
-ALGORITHM = token_conf['algorithm']
-ACCESS_TOKEN_EXPIRE_MINUTES = token_conf['expire']
+#token_conf = config["token"]
+# SECRET_KEY = token_conf['secret_key']
+# ALGORITHM = token_conf['algorithm']
+# ACCESS_TOKEN_EXPIRE_MINUTES = token_conf['expire']
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
