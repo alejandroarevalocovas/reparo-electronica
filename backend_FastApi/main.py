@@ -24,8 +24,11 @@ import os
 # db_conf = config["database"]
 
 # ---------- Cargar configuración Render ----------
-DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
-
+#DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+ALGORITHM = os.environ.get("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
