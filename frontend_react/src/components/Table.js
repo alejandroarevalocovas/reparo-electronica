@@ -1,30 +1,33 @@
-// src/components/Table.js
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { MaterialReactTable } from "material-react-table";
 import { Box } from "@mui/material";
 
 function Table({ rows, columns, onRowClick }) {
+  const [columnOrder, setColumnOrder] = useState(columns.map(c => c.accessorKey));
+
+  const memoColumns = useMemo(() => columns, [columns]);
+  const memoRows = useMemo(() => rows, [rows]);
+
   return (
-    <Box sx={{ width: "100%", height: "calc(100vh - 150px)" }}>
+    <Box sx={{ width: "100%" }}>
       <MaterialReactTable
-        columns={columns}
-        data={rows}
+        columns={memoColumns}
+        data={memoRows}
         enablePagination
         enableColumnActions
         enableColumnFilters
+        //enableColumnDragging
         enableSorting
-        initialState={{ pagination: { pageSize: 10 } }}
-        density="compact" // filas compactas
-        muiTableBodyRowProps={({ row }) => ({
-          onClick: () => { if (onRowClick) onRowClick(row.original); },
-          sx: {
-            cursor: "pointer",
-            "&:hover": { backgroundColor: "#f0f0f0" }, // hover moderno
-          },
+        initialState={{ pagination: { pageSize: 10 }, columnOrder }}
+        onColumnOrderChange={setColumnOrder} // aquí se actualiza el orden
+        muiTableBodyCellProps={({ cell }) => ({
+          sx: { py: 0.5, px: 1 },
+          onClick: () => onRowClick && onRowClick(cell.row.original),
         })}
-        muiTableBodyCellProps={{ sx: { py: 0.5, px: 1 } }} // menos padding vertical/horizontal
-        muiTableHeadCellProps={{ sx: { py: 1, px: 1, fontWeight: "bold" } }} // header compacto
-        muiTableContainerProps={{ sx: { borderRadius: 2, boxShadow: 1, bgcolor: "white" } }} // contenedor tipo tarjeta
+        muiTableHeadCellProps={{
+          sx: { py: 1, px: 1, fontWeight: "bold", cursor: "grab" },
+        }}
+        muiTableContainerProps={{ sx: { borderRadius: 2, boxShadow: 1, bgcolor: "white" } }}
       />
     </Box>
   );

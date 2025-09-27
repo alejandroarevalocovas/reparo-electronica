@@ -3,7 +3,8 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import PedidosList from "./pages/PedidosList";
-import ClientesList from "./pages/ClientesList"; // <--- nuevo import
+import ClientesList from "./pages/ClientesList";
+import StockList from "./pages/StockList";
 import Login from "./pages/Login";
 
 function App() {
@@ -33,9 +34,10 @@ function App() {
           path="/"
           element={user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
         >
-          <Route index element={<PedidosList />} />           {/* / */}
-          <Route path="pedidos" element={<PedidosList />} />  {/* /pedidos */}
-          <Route path="clientes" element={<ClientesList />} />{/* /clientes */}
+          <Route index element={<PedidosList />} />           
+          <Route path="pedidos" element={<PedidosList />} />  
+          <Route path="clientes" element={<ClientesList />} />
+          <Route path="stock" element={<StockList />} />  {/* NUEVO */}
         </Route>
 
         {/* Cualquier otra ruta */}

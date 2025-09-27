@@ -5,6 +5,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PersonIcon from "@mui/icons-material/Person";
+import InventoryIcon from "@mui/icons-material/Inventory";
 import { IconButton, Tooltip, Box, Button, Typography } from "@mui/material";
 
 function Layout({ user, onLogout }) {
@@ -76,6 +77,25 @@ function Layout({ user, onLogout }) {
               >
                 <PersonIcon />
                 {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Clientes</Typography>}
+              </Box>
+            </Tooltip>
+          </Link>
+
+          {/* Stock */}
+          <Link to="/stock" style={{ textDecoration: "none", color: "inherit" }}>
+            <Tooltip title="Stock" placement="right" disableHoverListener={menuOpen}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  "&:hover": { bgcolor: "primary.dark" },
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                <InventoryIcon />
+                {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Stock</Typography>}
               </Box>
             </Tooltip>
           </Link>

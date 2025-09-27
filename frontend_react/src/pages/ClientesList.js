@@ -1,4 +1,3 @@
-// src/pages/ClientesList.js
 import React, { useEffect, useState } from "react";
 import Table from "../components/Table";
 import { api } from "../api/api";
@@ -20,7 +19,7 @@ function ClientesList() {
   const [columns, setColumns] = useState([]);
   const [openClienteModal, setOpenClienteModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
-  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "" });
+  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const token = localStorage.getItem("token");
@@ -29,12 +28,15 @@ function ClientesList() {
     try {
       const res = await api.get("/clientes/", { headers: { Authorization: `Bearer ${token}` } });
       const data = res.data;
+
       if (data.length > 0) {
+        // columnas dinámicas excepto id
         const cols = Object.keys(data[0])
-          .filter(key => key !== "id")
-          .map(key => ({ accessorKey: key, id: key, header: key.replace(/_/g, " ").toUpperCase() }));
+          .filter((key) => key !== "id")
+          .map((key) => ({ accessorKey: key, id: key, header: key.replace(/_/g, " ").toUpperCase() }));
         setColumns(cols);
       }
+
       setClientes(data);
     } catch (err) {
       console.error(err);
@@ -63,7 +65,7 @@ function ClientesList() {
         setSnackbar({ open: true, message: "Cliente creado correctamente", severity: "success" });
       }
       setOpenClienteModal(false);
-      setNewCliente({ nombre: "", localizacion: "", contacto: "" });
+      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
       setEditingCliente(null);
     } catch (err) {
       console.error(err);
@@ -78,7 +80,7 @@ function ClientesList() {
       setClientes(prev => prev.filter(c => c.id !== editingCliente.id));
       setSnackbar({ open: true, message: "Cliente eliminado correctamente", severity: "success" });
       setOpenClienteModal(false);
-      setNewCliente({ nombre: "", localizacion: "", contacto: "" });
+      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
       setEditingCliente(null);
     } catch (err) {
       console.error(err);
@@ -94,65 +96,33 @@ function ClientesList() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => { setEditingCliente(null); setNewCliente({ nombre: "", localizacion: "", contacto: "" }); setOpenClienteModal(true); }}
+          onClick={() => { setEditingCliente(null); setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" }); setOpenClienteModal(true); }}
           sx={{ mb: 2 }}
         >
           Añadir Cliente
         </Button>
 
-        <Table
-          rows={clientes}
-          columns={columns}
-          onRowClick={handleRowClick}
-          muiTableContainerProps={{ sx: { borderRadius: 2, boxShadow: 1, bgcolor: "white" } }}
-          compact
-        />
+        <Table rows={clientes} columns={columns} onRowClick={handleRowClick} compact />
       </Box>
 
       {/* Modal Crear/Editar Cliente */}
-      <Dialog
-        open={openClienteModal}
-        onClose={() => setOpenClienteModal(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
+      <Dialog open={openClienteModal} onClose={() => setOpenClienteModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
         <DialogTitle>{editingCliente ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Nombre"
-                name="nombre"
-                fullWidth
-                value={newCliente.nombre}
-                onChange={handleChange}
-                margin="dense"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Localización"
-                name="localizacion"
-                fullWidth
-                value={newCliente.localizacion}
-                onChange={handleChange}
-                margin="dense"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Contacto"
-                name="contacto"
-                fullWidth
-                value={newCliente.contacto}
-                onChange={handleChange}
-                margin="dense"
-                size="small"
-              />
-            </Grid>
+            {["nombre", "localizacion", "contacto", "categoria"].map((field) => (
+              <Grid item xs={12} key={field}>
+                <TextField
+                  label={field.charAt(0).toUpperCase() + field.slice(1)}
+                  name={field}
+                  fullWidth
+                  value={newCliente[field] || ""}
+                  onChange={handleChange}
+                  margin="dense"
+                  size="small"
+                />
+              </Grid>
+            ))}
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -164,7 +134,6 @@ function ClientesList() {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
