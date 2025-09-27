@@ -175,6 +175,7 @@ class StockBase(BaseModel):
     formato: Optional[str] = None
     tipo: Optional[str] = None
     cantidad: Optional[int] = None
+    cantidad_total: Optional[int] = None
     ubicacion: Optional[str] = None
     estado: Optional[str] = None
     visto_en: Optional[str] = None
@@ -194,6 +195,7 @@ class StockCreate(BaseModel):
     formato: Optional[str] = None
     tipo: Optional[str] = None
     cantidad: Optional[int] = None
+    cantidad_total: Optional[int] = None
     ubicacion: Optional[str] = None
     estado: Optional[str] = None
     visto_en: Optional[str] = None
