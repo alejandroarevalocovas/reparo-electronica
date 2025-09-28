@@ -24,7 +24,7 @@ import os
 # db_conf = config["database"]
 
 # ---------- Cargar configuración Render ----------
-#DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
+# DATABASE_URL = "postgresql://reparo_electronica_db_user:e02ASAGPUbVg8fpWLFNj77qkmtyZel1s@dpg-d398jms9c44c73anjpjg-a.frankfurt-postgres.render.com/reparo_electronica_db"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALGORITHM = os.environ.get("ALGORITHM")
@@ -66,6 +66,7 @@ class Pedido(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
     numero_serie = Column(String(100), nullable=False)
     part_number = Column(String(100), nullable=True)
+    
 
     cliente = relationship("Cliente")
     stocks = relationship("PedidoStock", back_populates="pedido", cascade="all, delete-orphan")
@@ -130,6 +131,8 @@ class PedidoBase(BaseModel):
     cliente_id: int
     nombre_cliente: str
     comentarios: Optional[str] = None
+    precio_stock: Optional[float] = None
+    cobro_neto: Optional[float] = None
 
     class Config:
         orm_mode = True
@@ -275,30 +278,41 @@ def login_json(login_data: LoginData, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 # ------------------------------------------ PEDIDOS ---------------------------------------------
-@app.get("/pedidos/", response_model=list[PedidoBase])
+@app.get("/pedidos/", response_model=list[dict])
 def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
-    query = (
-        db.query(
-            Pedido.id,
-            Pedido.numero_serie,
-            Pedido.part_number,
-            Pedido.equipo,
-            Pedido.fecha_entrada,
-            Pedido.problema,
-            Pedido.estado,
-            Pedido.fecha_reparacion,
-            Pedido.tiempo_reparacion,
-            Pedido.precio,
-            Pedido.fecha_pagado,
-            Pedido.comentarios,
-            Pedido.cliente_id,
-            Cliente.nombre.label("nombre_cliente")
-        )
-        .join(Cliente, Pedido.cliente_id == Cliente.id)
-    )
-    resultados = query.all()
-    pedidos = [dict(r._asdict()) if hasattr(r, "_asdict") else r for r in resultados]
-    return pedidos
+    pedidos = db.query(Pedido).all()
+    resultado = []
+
+    for pedido in pedidos:
+        # Precio stock acumulado
+        precio_stock_total = 0
+        for ps in pedido.stocks:  # relación PedidoStock
+            if ps.stock and ps.stock.precio and ps.stock.cantidad_total:
+                precio_unitario = float(ps.stock.precio) / ps.stock.cantidad_total
+                precio_stock_total += precio_unitario * ps.cantidad_usada
+
+        row = {
+            "id": pedido.id,
+            "fecha_entrada": pedido.fecha_entrada,
+            "equipo": pedido.equipo,
+            "problema": pedido.problema,
+            "estado": pedido.estado,
+            "fecha_reparacion": pedido.fecha_reparacion,
+            "fecha_pagado": pedido.fecha_pagado,
+            "tiempo_reparacion": pedido.tiempo_reparacion,
+            "precio": float(pedido.precio) if pedido.precio else None,
+            "comentarios": pedido.comentarios,
+            "cliente_id": pedido.cliente_id,
+            "numero_serie": pedido.numero_serie,
+            "part_number": pedido.part_number,
+            "precio_stock": round(precio_stock_total, 2),
+            "cobro_neto": round(
+                (float(pedido.precio) if pedido.precio else 0) - precio_stock_total, 2
+            ),
+        }
+        resultado.append(row)
+
+    return resultado
 
 @app.get("/pedido_stock/{pedido_id}", response_model=List[PedidoStockResponse])
 def get_stock_pedido(pedido_id: int, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):

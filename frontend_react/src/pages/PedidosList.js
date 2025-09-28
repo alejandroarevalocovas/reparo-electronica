@@ -59,22 +59,32 @@ function PedidosList() {
     try {
       const res = await api.get("/pedidos/", { headers: { Authorization: `Bearer ${token}` } });
       const data = res.data;
+      //console.log("DATAAAAAAAAAAA",res.data)
       if (data.length > 0) {
         const cols = Object.keys(data[0])
           .filter((key) => key !== "id" && key !== "cliente_id")
           .map((key) => {
             // Formateo de columnas específicas
             let Cell = undefined;
-            if (key === "precio") {
+            if (key === "precio" || key === "precio_stock" || key === "cobro_neto") {
               Cell = ({ row }) => `${row.original[key]} €`;
             } else if (key === "tiempo_reparacion") {
               Cell = ({ row }) => row.original[key] != null ? `${row.original[key]} min` : "";
             }
 
+            // Asignar header con condición especial para "precio"
+            let header;
+            if (key === "precio") {
+              header = "COBRO CLIENTE";
+            } else {
+              header = key.replace(/_/g, " ").toUpperCase();
+            }
+
             return {
               accessorKey: key,
               id: key,
-              header: key.replace(/_/g, " ").toUpperCase(),
+              //header: key.replace(/_/g, " ").toUpperCase(),
+              header,
               Cell, // si Cell es undefined, la tabla mostrará el valor normal
             };
           });
@@ -146,19 +156,20 @@ function PedidosList() {
         await api.put(`/pedidos/${editingPedido.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const clienteSeleccionado = clientes.find((c) => c.id === payload.cliente_id);
-        setPedidos((prev) =>
-          prev.map((p) =>
-            p.id === editingPedido.id
-              ? { ...p, ...payload, nombre_cliente: clienteSeleccionado?.nombre || "" }
-              : p
-          )
-        );
+        await fetchPedidos();
+        // const clienteSeleccionado = clientes.find((c) => c.id === payload.cliente_id);
+        // setPedidos((prev) =>
+        //   prev.map((p) =>
+        //     p.id === editingPedido.id
+        //       ? { ...p, ...payload, nombre_cliente: clienteSeleccionado?.nombre || "" }
+        //       : p
+        //   )
+        // );
         setSnackbar({ open: true, message: "Pedido actualizado correctamente", severity: "success" });
       } else {
         const res = await api.post("/pedidos/", payload, { headers: { Authorization: `Bearer ${token}` } });
-        setEditingPedido(res.data);
-        fetchPedidos();
+        //setEditingPedido(res.data);
+        await fetchPedidos();
         setSnackbar({ open: true, message: "Pedido creado correctamente", severity: "success" });
       }
 
@@ -334,7 +345,10 @@ function PedidosList() {
               </Button>
             </Grid>
             {columns
-              .filter((col) => col.accessorKey !== "nombre_cliente" && col.accessorKey !== "stock")
+              .filter((col) => col.accessorKey !== "nombre_cliente" && 
+              col.accessorKey !== "stock" && 
+              col.accessorKey !== "precio_stock" &&
+              col.accessorKey !== "cobro_neto")
               .map((col) => (
                 <Grid item xs={6} key={col.accessorKey}>
                   {col.accessorKey.includes("fecha") ? (
