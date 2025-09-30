@@ -23,6 +23,7 @@ import {
   TableCell,
   TableBody,
   IconButton,
+  MenuItem,
 } from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -30,6 +31,20 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import DeleteIcon from "@mui/icons-material/Delete";
 dayjs.locale("es");
+
+const ESTADOS = [
+  { value: "Fase Inicial - Recibido / Pendiente de diagnóstico", label: "Recibido / Pendiente de diagnóstico: El equipo ha sido recibido y está en la cola para ser revisado. Es el punto de partida." },
+  { value: "En diagnóstico", label: "Has empezado a trabajar activamente en el equipo para identificar el problema." },
+  { value: "Esperando aprobación de presupuesto", label: "Has diagnosticado el problema, has generado un presupuesto y estás esperando la confirmación del cliente para proceder." },
+  { value: "Esperando piezas / componentes", label: "El cliente ha aprobado, pero necesitas material para continuar." },
+  { value: "En proceso de reparación", label: "El cliente ha aprobado y tienes las piezas. Estás trabajando activamente en la solución." },
+  { value: "Reparación finalizada / Listo para entregar", label: "Has terminado todo el trabajo técnico. Solo falta que el cliente lo recoja o se lo envíes." },
+  { value: "Avisado / Listo para recogida", label: "Has contactado con el cliente para informarle de que su equipo está listo." },
+  { value: "Entregado / Cerrado", label: "El cliente ha recogido el equipo, ha pagado y se puede archivar la orden." },
+  { value: "Sin reparación (Presupuesto no aprobado)", label: "El cliente ha rechazado el presupuesto. El equipo está pendiente de recogida o devolución." },
+  { value: "Irreparable", label: "Determinas que el equipo no se puede reparar (coste, piezas, daño catastrófico, etc.)." },
+  { value: "Entregado sin reparar", label: "El cliente ha recogido el equipo tras no aprobar el presupuesto o ser irreparable." },
+];
 
 function PedidosList() {
   const [pedidos, setPedidos] = useState([]);
@@ -39,8 +54,10 @@ function PedidosList() {
   const [newPedido, setNewPedido] = useState({});
   const [clientes, setClientes] = useState([]);
   const [openClienteModal, setOpenClienteModal] = useState(false);
-  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "" });
+  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [touchedFields, setTouchedFields] = useState({});
+
 
   // Modal ver stock
   const [openStockModal, setOpenStockModal] = useState(false);
@@ -51,6 +68,9 @@ function PedidosList() {
   const [openAsignarStockModal, setOpenAsignarStockModal] = useState(false);
   const [stockAsignado, setStockAsignado] = useState([]);
   const [stockDisponible, setStockDisponible] = useState([]);
+
+  //Modal info estado
+  const [openEstadoInfo, setOpenEstadoInfo] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -145,6 +165,26 @@ function PedidosList() {
 
   /** ---------------- Crear/Editar Pedido ---------------- **/
   const handleSubmitPedido = async () => {
+    // Campos obligatorios
+    const requiredFields = ["cliente_id", "numero_serie", "equipo", "problema", "precio", "fecha_entrada"];
+
+    // Marcar todos los campos obligatorios como "touched" al intentar guardar
+    let newTouched = {};
+    requiredFields.forEach(f => { newTouched[f] = true; });
+    setTouchedFields(newTouched);
+
+    // Validación: si falta algún campo, mostrar snackbar y salir
+    for (const field of requiredFields) {
+      if (!newPedido[field]) {
+        setSnackbar({ 
+          open: true, 
+          message: `El campo "${field.replace(/_/g, ' ')}" es obligatorio`, 
+          severity: "error" 
+        });
+        return; // Salir si hay campo vacío
+      }
+    }
+
     try {
       const payload = { ...newPedido, stocks: stockAsignado };
       delete payload.nombre_cliente;
@@ -157,32 +197,26 @@ function PedidosList() {
           headers: { Authorization: `Bearer ${token}` },
         });
         await fetchPedidos();
-        // const clienteSeleccionado = clientes.find((c) => c.id === payload.cliente_id);
-        // setPedidos((prev) =>
-        //   prev.map((p) =>
-        //     p.id === editingPedido.id
-        //       ? { ...p, ...payload, nombre_cliente: clienteSeleccionado?.nombre || "" }
-        //       : p
-        //   )
-        // );
         setSnackbar({ open: true, message: "Pedido actualizado correctamente", severity: "success" });
       } else {
-        const res = await api.post("/pedidos/", payload, { headers: { Authorization: `Bearer ${token}` } });
-        //setEditingPedido(res.data);
+        await api.post("/pedidos/", payload, { headers: { Authorization: `Bearer ${token}` } });
         await fetchPedidos();
         setSnackbar({ open: true, message: "Pedido creado correctamente", severity: "success" });
       }
 
+      // Resetar estado del modal
       setOpenPedidoModal(false);
       setNewPedido({});
       setEditingPedido(null);
       setStockAsignado([]);
       setStockDisponible([]);
+      setTouchedFields({}); // reset touched fields después de guardar
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al guardar pedido", severity: "error" });
     }
   };
+
 
   const handleDeletePedido = async () => {
     try {
@@ -207,7 +241,7 @@ function PedidosList() {
       setNewPedido({ ...newPedido, cliente_id: res.data.id });
       setSnackbar({ open: true, message: "Cliente creado correctamente", severity: "success" });
       setOpenClienteModal(false);
-      setNewCliente({ nombre: "", localizacion: "", contacto: "" });
+      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al crear cliente", severity: "error" });
@@ -328,44 +362,227 @@ function PedidosList() {
       </Box>
 
       {/* Modal Crear/Editar Pedido */}
-      <Dialog open={openPedidoModal} onClose={() => setOpenPedidoModal(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog 
+        open={openPedidoModal} 
+        onClose={() => setOpenPedidoModal(false)} 
+        maxWidth="md" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
         <DialogTitle>{editingPedido ? "Editar Pedido" : "Nuevo Pedido"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
+
+            {/* Numero de Serie */}
+            <Grid item xs={6}>
+              <TextField
+                label="Número de Serie"
+                name="numero_serie"
+                fullWidth
+                value={newPedido.numero_serie || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.numero_serie && !newPedido.numero_serie}
+                helperText={touchedFields.numero_serie && !newPedido.numero_serie ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Part Number */}
+            <Grid item xs={6}>
+              <TextField
+                label="Part Number"
+                name="part_number"
+                fullWidth
+                value={newPedido.part_number || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+              />
+            </Grid>
+
+            {/* Equipo */}
+            <Grid item xs={6}>
+              <TextField
+                label="Equipo"
+                name="equipo"
+                fullWidth
+                value={newPedido.equipo || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.equipo && !newPedido.equipo}
+                helperText={touchedFields.equipo && !newPedido.equipo ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Problema */}
+            <Grid item xs={6}>
+              <TextField
+                label="Problema"
+                name="problema"
+                fullWidth
+                value={newPedido.problema || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.problema && !newPedido.problema}
+                helperText={touchedFields.problema && !newPedido.problema ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Fecha Entrada */}
+            <Grid item xs={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+                <DatePicker
+                  label="Fecha Entrada"
+                  value={newPedido.fecha_entrada ? dayjs(newPedido.fecha_entrada) : null}
+                  onChange={(value) => handleDateChange("fecha_entrada", value)}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      margin: "dense",
+                      size: "small",
+                      required: true,
+                      error: touchedFields.fecha_entrada && !newPedido.fecha_entrada,
+                      helperText: touchedFields.fecha_entrada && !newPedido.fecha_entrada ? "Este campo es obligatorio" : "",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </Grid>
+
+            {/* Cliente */}
             <Grid item xs={6}>
               <Autocomplete
                 options={clientes}
                 getOptionLabel={(option) => option.nombre}
                 value={clientes.find((c) => c.id === newPedido.cliente_id) || null}
                 onChange={(e, value) => setNewPedido({ ...newPedido, cliente_id: value ? value.id : null })}
-                renderInput={(params) => <TextField {...params} label="Cliente" fullWidth margin="dense" size="small" />}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Cliente"
+                    fullWidth
+                    margin="dense"
+                    size="small"
+                    required
+                    error={touchedFields.cliente_id && !newPedido.cliente_id}
+                    helperText={touchedFields.cliente_id && !newPedido.cliente_id ? "Este campo es obligatorio" : ""}
+                    sx={{ minWidth: '200px' }}
+                  />
+                )}
               />
-              <Button variant="outlined" color="secondary" onClick={() => setOpenClienteModal(true)} sx={{ mt: 1 }}>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                onClick={() => setOpenClienteModal(true)} 
+                sx={{ mt: 1 }}
+              >
                 Nuevo Cliente
               </Button>
             </Grid>
-            {columns
-              .filter((col) => col.accessorKey !== "nombre_cliente" && 
-              col.accessorKey !== "stock" && 
-              col.accessorKey !== "precio_stock" &&
-              col.accessorKey !== "cobro_neto")
-              .map((col) => (
-                <Grid item xs={6} key={col.accessorKey}>
-                  {col.accessorKey.includes("fecha") ? (
-                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
-                      <DatePicker
-                        label={col.header}
-                        value={newPedido[col.accessorKey] ? dayjs(newPedido[col.accessorKey]) : null}
-                        onChange={(value) => handleDateChange(col.accessorKey, value)}
-                        format="DD/MM/YYYY"
-                        slotProps={{ textField: { fullWidth: true, margin: "dense", size: "small" } }}
-                      />
-                    </LocalizationProvider>
-                  ) : (
-                    <TextField label={col.header} name={col.accessorKey} fullWidth value={newPedido[col.accessorKey] || ""} onChange={handleChange} margin="dense" size="small" />
-                  )}
-                </Grid>
-              ))}
+
+            {/* Cobro Cliente */}
+            <Grid item xs={6}>
+              <TextField
+                label="Cobro Cliente"
+                name="precio"
+                fullWidth
+                value={newPedido.precio || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.precio && !newPedido.precio}
+                helperText={touchedFields.precio && !newPedido.precio ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Fecha Pagado */}
+            <Grid item xs={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+                <DatePicker
+                  label="Fecha Pagado"
+                  value={newPedido.fecha_pagado ? dayjs(newPedido.fecha_pagado) : null}
+                  onChange={(value) => handleDateChange("fecha_pagado", value)}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: { fullWidth: true, margin: "dense", size: "small" },
+                  }}
+                />
+              </LocalizationProvider>
+            </Grid>
+
+            {/* Estado */}
+            <Grid item xs={6}>
+              <TextField
+                select
+                label="Estado"
+                name="estado"
+                value={newPedido.estado || ""}
+                onChange={handleChange}
+                fullWidth
+                margin="dense"
+                size="small"
+                sx={{ minWidth: '400px' }}
+              >
+                <option value=""></option>
+                {ESTADOS.map((estado, idx) => (
+                  <option key={idx} value={estado.value}>{estado.value}</option>
+                ))}
+              </TextField>
+            </Grid>
+
+            {/* Fecha Reparacion */}
+            <Grid item xs={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+                <DatePicker
+                  label="Fecha Reparación"
+                  value={newPedido.fecha_reparacion ? dayjs(newPedido.fecha_reparacion) : null}
+                  onChange={(value) => handleDateChange("fecha_reparacion", value)}
+                  format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: { fullWidth: true, margin: "dense", size: "small" },
+                  }}
+                />
+              </LocalizationProvider>
+            </Grid>
+
+            {/* Tiempo Reparacion */}
+            <Grid item xs={6}>
+              <TextField
+                label="Tiempo Reparación (min)"
+                name="tiempo_reparacion"
+                fullWidth
+                value={newPedido.tiempo_reparacion || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+              />
+            </Grid>
+
+            {/* Comentarios (larga y ancha) */}
+            <Grid item xs={12}>
+              <TextField
+                label="Comentarios"
+                name="comentarios"
+                fullWidth
+                multiline
+                minRows={4}
+                maxRows={10}
+                value={newPedido.comentarios || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                sx={{ minWidth: '400px' }}
+              />
+            </Grid>
+
           </Grid>
 
           <Box sx={{ mt: 2 }}>
@@ -374,28 +591,140 @@ function PedidosList() {
             </Button>
           </Box>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => setOpenPedidoModal(false)}>Cancelar</Button>
           {editingPedido && <Button variant="outlined" color="error" onClick={handleDeletePedido}>Eliminar</Button>}
-          <Button variant="contained" color="primary" onClick={handleSubmitPedido}>{editingPedido ? "Guardar cambios" : "Crear"}</Button>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => {
+              // marcar todos los campos obligatorios como tocados al intentar enviar
+              const requiredFields = ["cliente_id", "numero_serie", "equipo", "problema", "precio", "fecha_entrada"];
+              let newTouched = {};
+              requiredFields.forEach(f => { newTouched[f] = true; });
+              setTouchedFields(newTouched);
+
+              handleSubmitPedido();
+            }}
+          >
+            {editingPedido ? "Guardar cambios" : "Crear"}
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Modal Nuevo Cliente */}
-      <Dialog open={openClienteModal} onClose={() => setOpenClienteModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle>Nuevo Cliente</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12}><TextField label="Nombre" fullWidth value={newCliente.nombre} onChange={(e) => setNewCliente({ ...newCliente, nombre: e.target.value })} margin="dense" size="small" /></Grid>
-            <Grid item xs={12}><TextField label="Localización" fullWidth value={newCliente.localizacion} onChange={(e) => setNewCliente({ ...newCliente, localizacion: e.target.value })} margin="dense" size="small" /></Grid>
-            <Grid item xs={12}><TextField label="Contacto" fullWidth value={newCliente.contacto} onChange={(e) => setNewCliente({ ...newCliente, contacto: e.target.value })} margin="dense" size="small" /></Grid>
+    {/* Modal Nuevo Cliente */}
+    <Dialog 
+      open={openClienteModal} 
+      onClose={() => setOpenClienteModal(false)} 
+      maxWidth="sm" 
+      fullWidth 
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle>{"Nuevo Cliente"}</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2}>
+          {/* Nombre */}
+          <Grid item xs={12}>
+            <TextField
+              label="Nombre"
+              name="nombre"
+              fullWidth
+              value={newCliente.nombre || ""}
+              onChange={(e) => setNewCliente({ ...newCliente, nombre: e.target.value })}
+              margin="dense"
+              size="small"
+              required
+              error={touchedFields.nombre && !newCliente.nombre}
+              helperText={touchedFields.nombre && !newCliente.nombre ? "Este campo es obligatorio" : ""}
+            />
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenClienteModal(false)}>Cancelar</Button>
-          <Button variant="contained" color="primary" onClick={handleSubmitCliente}>Crear Cliente</Button>
-        </DialogActions>
-      </Dialog>
+
+          {/* Localización */}
+          <Grid item xs={12}>
+            <TextField
+              label="Localización"
+              name="localizacion"
+              fullWidth
+              value={newCliente.localizacion || ""}
+              onChange={(e) => setNewCliente({ ...newCliente, localizacion: e.target.value })}
+              margin="dense"
+              size="small"
+            />
+          </Grid>
+
+          {/* Contacto */}
+          <Grid item xs={12}>
+            <TextField
+              label="Contacto"
+              name="contacto"
+              fullWidth
+              value={newCliente.contacto || ""}
+              onChange={(e) => setNewCliente({ ...newCliente, contacto: e.target.value })}
+              margin="dense"
+              size="small"
+              required
+              error={touchedFields.contacto && !newCliente.contacto}
+              helperText={touchedFields.contacto && !newCliente.contacto ? "Este campo es obligatorio" : ""}
+            />
+          </Grid>
+
+          {/* Categoria */}
+          <Grid item xs={12}>
+            <TextField
+              select
+              label="Categoría"
+              name="categoria"
+              value={newCliente.categoria || ""}
+              onChange={(e) => setNewCliente({ ...newCliente, categoria: e.target.value })}
+              fullWidth
+              margin="dense"
+              size="small"
+              required
+              error={touchedFields.categoria && !newCliente.categoria}
+              helperText={touchedFields.categoria && !newCliente.categoria ? "Este campo es obligatorio" : ""}
+              sx={{ minWidth: '250px' }}
+            >
+              <MenuItem value=""></MenuItem>
+              {["Empresa", "Particular"].map((cat) => (
+                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={() => setOpenClienteModal(false)}>Cancelar</Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            // Marcar los campos obligatorios como tocados
+            const requiredFields = ["nombre", "contacto", "categoria"];
+            let newTouched = {};
+            requiredFields.forEach(f => { newTouched[f] = true; });
+            setTouchedFields(newTouched);
+
+            // Validación antes de enviar
+            for (const field of requiredFields) {
+              if (!newCliente[field]) {
+                setSnackbar({
+                  open: true,
+                  message: `El campo "${field.charAt(0).toUpperCase() + field.slice(1)}" es obligatorio`,
+                  severity: "error"
+                });
+                return;
+              }
+            }
+
+            handleSubmitCliente();
+          }}
+        >
+          Crear Cliente
+        </Button>
+      </DialogActions>
+    </Dialog>
 
       {/* Modal Ver Stock */}
       <Dialog open={openStockModal} onClose={() => setOpenStockModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -549,8 +878,31 @@ function PedidosList() {
         </DialogActions>
       </Dialog>
 
-
-
+       {/* Modal info estado */}
+      <Dialog
+        open={openEstadoInfo}
+        onClose={() => setOpenEstadoInfo(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle>Estados de Pedido</DialogTitle>
+        <DialogContent dividers>
+          {ESTADOS.map((estado, idx) => (
+            <Box key={idx} mb={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                {estado.value}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {estado.label}
+              </Typography>
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEstadoInfo(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
 
 
       {/* Snackbar */}

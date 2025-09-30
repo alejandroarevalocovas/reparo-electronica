@@ -1,3 +1,4 @@
+// src/pages/ClientesList.js
 import React, { useEffect, useState } from "react";
 import Table from "../components/Table";
 import { api } from "../api/api";
@@ -12,6 +13,7 @@ import {
   Snackbar,
   Alert,
   Box,
+  MenuItem,
 } from "@mui/material";
 
 function ClientesList() {
@@ -20,17 +22,20 @@ function ClientesList() {
   const [openClienteModal, setOpenClienteModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
   const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+  const [touchedFields, setTouchedFields] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const token = localStorage.getItem("token");
 
+  const CATEGORIAS = ["Empresa", "Particular"];
+
+  /** ---------------- Fetch clientes ---------------- **/
   const fetchClientes = async () => {
     try {
       const res = await api.get("/clientes/", { headers: { Authorization: `Bearer ${token}` } });
       const data = res.data;
 
       if (data.length > 0) {
-        // columnas dinámicas excepto id
         const cols = Object.keys(data[0])
           .filter((key) => key !== "id")
           .map((key) => ({ accessorKey: key, id: key, header: key.replace(/_/g, " ").toUpperCase() }));
@@ -53,7 +58,28 @@ function ClientesList() {
     setOpenClienteModal(true);
   };
 
+  /** ---------------- Crear/Editar Cliente ---------------- **/
   const handleSubmitCliente = async () => {
+    // Campos obligatorios
+    const requiredFields = ["nombre", "contacto", "categoria"];
+    
+    // Marcar todos los campos obligatorios como tocados
+    let newTouched = {};
+    requiredFields.forEach(f => { newTouched[f] = true; });
+    setTouchedFields(newTouched);
+
+    // Validación: mostrar snackbar si algún campo obligatorio está vacío
+    for (const field of requiredFields) {
+      if (!newCliente[field]) {
+        setSnackbar({ 
+          open: true, 
+          message: `El campo "${field.charAt(0).toUpperCase() + field.slice(1)}" es obligatorio`, 
+          severity: "error" 
+        });
+        return;
+      }
+    }
+
     try {
       if (editingCliente) {
         await api.put(`/clientes/${editingCliente.id}`, newCliente, { headers: { Authorization: `Bearer ${token}` } });
@@ -67,6 +93,7 @@ function ClientesList() {
       setOpenClienteModal(false);
       setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
       setEditingCliente(null);
+      setTouchedFields({});
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al guardar cliente", severity: "error" });
@@ -82,6 +109,7 @@ function ClientesList() {
       setOpenClienteModal(false);
       setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
       setEditingCliente(null);
+      setTouchedFields({});
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al eliminar cliente", severity: "error" });
@@ -96,7 +124,12 @@ function ClientesList() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => { setEditingCliente(null); setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" }); setOpenClienteModal(true); }}
+          onClick={() => { 
+            setEditingCliente(null); 
+            setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" }); 
+            setTouchedFields({});
+            setOpenClienteModal(true); 
+          }}
           sx={{ mb: 2 }}
         >
           Añadir Cliente
@@ -106,25 +139,86 @@ function ClientesList() {
       </Box>
 
       {/* Modal Crear/Editar Cliente */}
-      <Dialog open={openClienteModal} onClose={() => setOpenClienteModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog 
+        open={openClienteModal} 
+        onClose={() => setOpenClienteModal(false)} 
+        maxWidth="sm" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
         <DialogTitle>{editingCliente ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
-            {["nombre", "localizacion", "contacto", "categoria"].map((field) => (
-              <Grid item xs={12} key={field}>
-                <TextField
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  name={field}
-                  fullWidth
-                  value={newCliente[field] || ""}
-                  onChange={handleChange}
-                  margin="dense"
-                  size="small"
-                />
-              </Grid>
-            ))}
+            {/* Nombre */}
+            <Grid item xs={12}>
+              <TextField
+                label="Nombre"
+                name="nombre"
+                fullWidth
+                value={newCliente.nombre || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.nombre && !newCliente.nombre}
+                helperText={touchedFields.nombre && !newCliente.nombre ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Localización */}
+            <Grid item xs={12}>
+              <TextField
+                label="Localización"
+                name="localizacion"
+                fullWidth
+                value={newCliente.localizacion || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+              />
+            </Grid>
+
+            {/* Contacto */}
+            <Grid item xs={12}>
+              <TextField
+                label="Contacto"
+                name="contacto"
+                fullWidth
+                value={newCliente.contacto || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.contacto && !newCliente.contacto}
+                helperText={touchedFields.contacto && !newCliente.contacto ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Categoria */}
+            <Grid item xs={12}>
+            <TextField
+                select
+                label="Categoría"
+                name="categoria"
+                value={newCliente.categoria || ""}
+                onChange={handleChange}
+                fullWidth
+                margin="dense"
+                size="small"   // <-- igual que los demás campos
+                required
+                error={touchedFields.categoria && !newCliente.categoria}
+                helperText={touchedFields.categoria && !newCliente.categoria ? "Este campo es obligatorio" : ""}
+                sx={{ minWidth: '250px' }}
+            >
+                <MenuItem value=""></MenuItem>
+                {CATEGORIAS.map((cat) => (
+                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
+            </TextField>
+            </Grid>
           </Grid>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => setOpenClienteModal(false)}>Cancelar</Button>
           {editingCliente && <Button variant="outlined" color="error" onClick={handleDeleteCliente}>Eliminar</Button>}

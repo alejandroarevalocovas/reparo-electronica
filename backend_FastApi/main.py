@@ -54,18 +54,18 @@ class User(Base):
 class Pedido(Base):
     __tablename__ = "pedidos"
     id = Column(Integer, primary_key=True, index=True)
-    fecha_entrada = Column(Date, default=date.today)
-    equipo = Column(String(100), nullable=False)
-    problema = Column(Text)
-    estado = Column(String(50), default="pendiente")
+    fecha_entrada = Column(Date, default=date.today, nullable=False)
+    equipo = Column(Text, nullable=False)
+    problema = Column(Text, nullable=False)
+    estado = Column(Text, nullable=True)
     fecha_reparacion = Column(Date, nullable=True)
     fecha_pagado = Column(Date, nullable=True)
     tiempo_reparacion = Column(Integer, nullable=True)
-    precio = Column(Numeric(10, 2), nullable=True)
+    precio = Column(Numeric(10, 2), nullable=False)
     comentarios = Column(Text, nullable=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
-    numero_serie = Column(String(100), nullable=False)
-    part_number = Column(String(100), nullable=True)
+    numero_serie = Column(Text, nullable=False)
+    part_number = Column(Text, nullable=True)
     
 
     cliente = relationship("Cliente")
@@ -76,17 +76,17 @@ class Cliente(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(100), nullable=False)
     localizacion = Column(String(100), nullable=True)
-    contacto = Column(String(100), nullable=True)
-    categoria = Column(String(100), nullable=True)
+    contacto = Column(String(100), nullable=False)
+    categoria = Column(String(100), nullable=False)
 
 class Stock(Base):
     __tablename__ = "stock"
     id = Column(Integer, primary_key=True, index=True)
     referencia = Column(String(100), nullable=False)
     formato = Column(String(100), nullable=True)
-    tipo = Column(String(100), nullable=True)
+    tipo = Column(String(100), nullable=False)
     cantidad = Column(Integer, nullable=True)
-    cantidad_total = Column(Integer, nullable=True)
+    cantidad_total = Column(Integer, nullable=False)
     ubicacion = Column(String(100), nullable=True)
     estado = Column(String(50), nullable=True)
     visto_en = Column(String(255), nullable=True)
@@ -94,7 +94,7 @@ class Stock(Base):
     comentarios = Column(Text, nullable=True)
     enlace_compra = Column(String(255), nullable=True)
     fecha_compra = Column(Date, nullable=True)
-    precio = Column(Numeric(10, 2), nullable=True)
+    precio = Column(Numeric(10, 2), nullable=False)
     detalles = Column(JSONB, default={}) 
 
     pedidos = relationship("PedidoStock", back_populates="stock", cascade="all, delete-orphan")
@@ -122,11 +122,11 @@ class PedidoBase(BaseModel):
     part_number: Optional[str] = None
     equipo: str
     fecha_entrada: date
-    problema: Optional[str] = None
+    problema: str
     estado: Optional[str] = "pendiente"
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
-    precio: Optional[float] = None
+    precio: float
     fecha_pagado: Optional[date] = None
     cliente_id: int
     nombre_cliente: str
@@ -146,11 +146,11 @@ class PedidoCreate(BaseModel):
     part_number: Optional[str] = None
     equipo: str
     fecha_entrada: date
-    problema: Optional[str] = None
-    estado: Optional[str] = "pendiente"
+    problema: str
+    estado: Optional[str] = None
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
-    precio: Optional[float] = None
+    precio: float
     fecha_pagado: Optional[date] = None
     cliente_id: int
     comentarios: Optional[str] = None
@@ -160,8 +160,8 @@ class ClienteBase(BaseModel):
     id: int
     nombre: str
     localizacion: Optional[str] = None
-    contacto: Optional[str] = None
-    categoria: Optional[str] = None
+    contacto: str
+    categoria: str
 
     class Config:
         orm_mode = True
@@ -169,16 +169,16 @@ class ClienteBase(BaseModel):
 class ClienteCreate(BaseModel):
     nombre: str
     localizacion: Optional[str] = None
-    contacto: Optional[str] = None
-    categoria: Optional[str] = None
+    contacto: str
+    categoria: str
 
 class StockBase(BaseModel):
     id: int
     referencia: str
     formato: Optional[str] = None
-    tipo: Optional[str] = None
+    tipo: str
     cantidad: Optional[int] = None
-    cantidad_total: Optional[int] = None
+    cantidad_total: int
     ubicacion: Optional[str] = None
     estado: Optional[str] = None
     visto_en: Optional[str] = None
@@ -186,7 +186,7 @@ class StockBase(BaseModel):
     comentarios: Optional[str] = None
     enlace_compra: Optional[str] = None
     fecha_compra: Optional[date] = None
-    precio: Optional[float] = None
+    precio: float
     precio_unidad: Optional[float] = None
     detalles: Optional[Dict] = {}
 
@@ -196,9 +196,9 @@ class StockBase(BaseModel):
 class StockCreate(BaseModel):
     referencia: str
     formato: Optional[str] = None
-    tipo: Optional[str] = None
+    tipo: str
     cantidad: Optional[int] = None
-    cantidad_total: Optional[int] = None
+    cantidad_total: int
     ubicacion: Optional[str] = None
     estado: Optional[str] = None
     visto_en: Optional[str] = None
@@ -206,7 +206,7 @@ class StockCreate(BaseModel):
     comentarios: Optional[str] = None
     enlace_compra: Optional[str] = None
     fecha_compra: Optional[date] = None
-    precio: Optional[float] = None
+    precio: float
     detalles: Optional[Dict] = {}
 
 class PedidoStockResponse(BaseModel):
@@ -267,6 +267,10 @@ def root():
 @app.head("/ping")
 def ping():
     return {"status": "ok"}
+
+@app.get("/me")
+def get_current_user_info(current_user: str = Depends(get_current_user)):
+    return {"username": current_user}
 
 # ---------- LOGIN ----------
 @app.post("/login")

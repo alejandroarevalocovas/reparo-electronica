@@ -31,6 +31,7 @@ function StockList() {
   const [editingStock, setEditingStock] = useState(null);
   const [newStock, setNewStock] = useState({ fecha_actual: dayjs().format("YYYY-MM-DD"), detalles: {} });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [touchedFields, setTouchedFields] = useState({});
 
   // --- Modal detalles ---
   const [openDetallesModal, setOpenDetallesModal] = useState(false);
@@ -49,19 +50,27 @@ function StockList() {
       const data = res.data;
 
       if (data.length > 0) {
-        const cols = Object.keys(data[0])
-          .filter((key) => key !== "id" && key !== "detalles")
-          .map((key) => ({
-            accessorKey: key,
-            id: key,
-            header: key === "cantidad" ? "CANTIDAD DISPONIBLE" : key.replace(/_/g, " ").toUpperCase(),
-            Cell:
-              key === "precio"
-                ? ({ row }) => (row.original[key] != null ? `${row.original[key]} €` : "")
-                : key === "precio_unidad"
-                ? ({ row }) => (row.original[key] != null ? `${row.original[key]} €/u` : "")
-                : undefined,
-          }));
+        const order = [
+          "referencia", "tipo", "formato", "fecha_actual", "cantidad_total", "cantidad",
+          "precio", "precio_unidad", "fecha_compra", "estado", "ubicacion", "visto_en", "enlace_compra", "comentarios"
+        ];
+
+        const cols = order.map((key) => ({
+          accessorKey: key,
+          id: key,
+          header:
+            key === "cantidad_total"
+              ? "CANTIDAD COMPRADA"
+              : key === "cantidad"
+              ? "CANTIDAD DISPONIBLE"
+              : key.replace(/_/g, " ").toUpperCase(),
+          Cell:
+            key === "precio"
+              ? ({ row }) => (row.original[key] != null ? `${row.original[key]} €` : "")
+              : key === "precio_unidad"
+              ? ({ row }) => (row.original[key] != null ? `${row.original[key]} €/u` : "")
+              : undefined,
+        }));
 
         cols.push({
           accessorKey: "detalles",
@@ -105,11 +114,8 @@ function StockList() {
   const handleRowClick = (item) => {
     setEditingStock(item);
     setNewStock({ ...item, detalles: item.detalles || {} });
-
-    // Preparamos array de detalles para modal
     const arr = Object.entries(item.detalles || {}).map(([key, value]) => ({ key, value }));
     setDetallesArray(arr);
-
     setOpenStockModal(true);
   };
 
@@ -139,6 +145,7 @@ function StockList() {
       setNewStock({ fecha_actual: dayjs().format("YYYY-MM-DD"), detalles: {} });
       setDetallesArray([]);
       setEditingStock(null);
+      setTouchedFields({});
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al guardar stock", severity: "error" });
@@ -168,54 +175,50 @@ function StockList() {
     setDetallesArray(copy);
   };
 
-  const handleAddDetalle = () => {
-    setDetallesArray([...detallesArray, { key: "", value: "" }]);
-  };
-
+  const handleAddDetalle = () => setDetallesArray([...detallesArray, { key: "", value: "" }]);
   const handleRemoveDetalle = (index) => {
     const copy = [...detallesArray];
     copy.splice(index, 1);
     setDetallesArray(copy);
   };
 
-    const renderDetallesForm = () => (
+  const renderDetallesForm = () => (
     <Box sx={{ mt: 1 }}>
-        {detallesArray.map((item, index) => (
+      {detallesArray.map((item, index) => (
         <Grid container spacing={1} alignItems="center" key={index} sx={{ mb: 1 }}>
-            <Grid item xs={5}>
+          <Grid item xs={5}>
             <TextField
-                label="Clave"
-                fullWidth
-                size="small"
-                value={item.key}
-                onChange={(e) => handleDetalleChange(index, "key", e.target.value)}
+              label="Clave"
+              fullWidth
+              size="small"
+              value={item.key}
+              onChange={(e) => handleDetalleChange(index, "key", e.target.value)}
             />
-            </Grid>
-            <Grid item xs={5}>
+          </Grid>
+          <Grid item xs={5}>
             <TextField
-                label="Valor"
-                fullWidth
-                size="small"
-                value={item.value}
-                onChange={(e) => handleDetalleChange(index, "value", e.target.value)}
+              label="Valor"
+              fullWidth
+              size="small"
+              value={item.value}
+              onChange={(e) => handleDetalleChange(index, "value", e.target.value)}
             />
-            </Grid>
-            <Grid item xs={2} sx={{ display: "flex", justifyContent: "center" }}>
+          </Grid>
+          <Grid item xs={2} sx={{ display: "flex", justifyContent: "center" }}>
             <IconButton
-                onClick={() => handleRemoveDetalle(index)}
-                sx={{ border: "1px solid #ccc", borderRadius: "50%", p: 0.5 }}
+              onClick={() => handleRemoveDetalle(index)}
+              sx={{ border: "1px solid #ccc", borderRadius: "50%", p: 0.5 }}
             >
-                <CloseIcon fontSize="small" />
+              <CloseIcon fontSize="small" />
             </IconButton>
-            </Grid>
+          </Grid>
         </Grid>
-        ))}
-        <Button variant="outlined" onClick={handleAddDetalle}>
+      ))}
+      <Button variant="outlined" onClick={handleAddDetalle}>
         + Añadir campo
-        </Button>
+      </Button>
     </Box>
-    );
-
+  );
 
   // -------------------- RENDER --------------------
   return (
@@ -230,6 +233,7 @@ function StockList() {
             setEditingStock(null);
             setNewStock({ fecha_actual: dayjs().format("YYYY-MM-DD"), detalles: {} });
             setDetallesArray([]);
+            setTouchedFields({});
             setOpenStockModal(true);
           }}
           sx={{ mb: 2 }}
@@ -245,45 +249,77 @@ function StockList() {
         <DialogTitle>{editingStock ? "Editar Stock" : "Nuevo Stock"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
-            {columns
-              .filter((col) => col.accessorKey !== "precio_unidad" && col.accessorKey !== "detalles")
-              .map((col) => (
-                <Grid item xs={6} key={col.accessorKey}>
-                  {col.accessorKey.includes("fecha") ? (
-                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
-                      <DatePicker
-                        label={col.header}
-                        value={newStock[col.accessorKey] ? dayjs(newStock[col.accessorKey]) : null}
-                        onChange={(value) => handleDateChange(col.accessorKey, value)}
-                        format="DD/MM/YYYY"
-                        slotProps={{ textField: { fullWidth: true, margin: "dense", size: "small" } }}
-                      />
-                    </LocalizationProvider>
-                  ) : (
-                    <TextField
-                      label={col.header}
-                      name={col.accessorKey}
-                      fullWidth
-                      value={newStock[col.accessorKey] || ""}
-                      onChange={handleChange}
-                      margin="dense"
-                      size="small"
+            {[
+              { key: "referencia", label: "Referencia", required: true },
+              { key: "tipo", label: "Tipo", required: true },
+              { key: "formato", label: "Formato" },
+              { key: "fecha_actual", label: "Fecha Actual", type: "date" },
+              { key: "cantidad_total", label: "Cantidad Comprada", required: true },
+              { key: "cantidad", label: "Cantidad Disponible" },
+              { key: "precio", label: "Precio (€)", required: true },
+             // { key: "precio_unidad", label: "Precio Unidad" },
+              { key: "fecha_compra", label: "Fecha Compra", type: "date" },
+              { key: "estado", label: "Estado" },
+              { key: "ubicacion", label: "Ubicación" },
+              { key: "visto_en", label: "Visto En" },
+              { key: "enlace_compra", label: "Enlace Compra" },
+              { key: "comentarios", label: "Comentarios", multiline: true, minRows: 3, sx: '400px' },
+            ].map((field) => (
+              <Grid item xs={field.multiline ? 12 : 6} key={field.key}>
+                {field.type === "date" ? (
+                  <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+                    <DatePicker
+                      label={field.label}
+                      value={newStock[field.key] ? dayjs(newStock[field.key]) : null}
+                      onChange={(value) => handleDateChange(field.key, value)}
+                      format="DD/MM/YYYY"
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          margin: "dense",
+                          size: "small",
+                          required: field.required,
+                          error: touchedFields[field.key] && !newStock[field.key],
+                          helperText:
+                            touchedFields[field.key] && !newStock[field.key]
+                              ? "Este campo es obligatorio"
+                              : "",
+                        },
+                      }}
                     />
-                  )}
-                </Grid>
-              ))}
+                  </LocalizationProvider>
+                ) : (
+                  <TextField
+                    label={field.label}
+                    name={field.key}
+                    fullWidth
+                    value={newStock[field.key] || ""}
+                    onChange={handleChange}
+                    margin="dense"
+                    size="small"
+                    multiline={field.multiline || false}
+                    minRows={field.minRows || 1}
+                    required={field.required || false}
+                    error={touchedFields[field.key] && field.required && !newStock[field.key]}
+                    helperText={
+                      touchedFields[field.key] && field.required && !newStock[field.key]
+                        ? "Este campo es obligatorio"
+                        : ""
+                    }
+                    sx={ field.sx ? { minWidth: field.sx } : {}}
+                  />
+                )}
+              </Grid>
+            ))}
           </Grid>
 
           <Box sx={{ mt: 2 }}>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => setOpenDetallesModal(true)}
-            >
+            <Button variant="outlined" color="secondary" onClick={() => setOpenDetallesModal(true)}>
               {detallesArray.length > 0 ? "Editar Detalles" : "Añadir Detalles"}
             </Button>
           </Box>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => setOpenStockModal(false)}>Cancelar</Button>
           {editingStock && (
@@ -291,7 +327,29 @@ function StockList() {
               Eliminar
             </Button>
           )}
-          <Button variant="contained" color="primary" onClick={handleSubmitStock}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              const requiredFields = ["referencia", "tipo", "precio", "cantidad_total"];
+              let newTouched = {};
+              requiredFields.forEach((f) => (newTouched[f] = true));
+              setTouchedFields(newTouched);
+
+              for (const field of requiredFields) {
+                if (!newStock[field]) {
+                  setSnackbar({
+                    open: true,
+                    message: `El campo "${field.charAt(0).toUpperCase() + field.slice(1)}" es obligatorio`,
+                    severity: "error",
+                  });
+                  return;
+                }
+              }
+
+              handleSubmitStock();
+            }}
+          >
             {editingStock ? "Guardar cambios" : "Crear"}
           </Button>
         </DialogActions>
@@ -303,14 +361,18 @@ function StockList() {
         <DialogContent>{renderDetallesForm()}</DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDetallesModal(false)}>Cancelar</Button>
-          <Button variant="contained" color="primary" onClick={() => {
-            const detallesObj = {};
-            detallesArray.forEach((item) => {
-              if (item.key.trim() !== "") detallesObj[item.key] = item.value;
-            });
-            setNewStock({ ...newStock, detalles: detallesObj });
-            setOpenDetallesModal(false);
-          }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              const detallesObj = {};
+              detallesArray.forEach((item) => {
+                if (item.key.trim() !== "") detallesObj[item.key] = item.value;
+              });
+              setNewStock({ ...newStock, detalles: detallesObj });
+              setOpenDetallesModal(false);
+            }}
+          >
             Guardar
           </Button>
         </DialogActions>
@@ -327,7 +389,9 @@ function StockList() {
               {Object.entries(detallesView).map(([key, value]) => (
                 <Grid item xs={6} key={key}>
                   <Typography variant="subtitle2">{key}</Typography>
-                  <Typography variant="body2" color="text.secondary">{value}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {value}
+                  </Typography>
                 </Grid>
               ))}
             </Grid>
@@ -345,7 +409,11 @@ function StockList() {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

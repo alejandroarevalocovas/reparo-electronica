@@ -1,6 +1,7 @@
 // src/App.js
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { api } from "./api/api";
 import Layout from "./components/Layout";
 import PedidosList from "./pages/PedidosList";
 import ClientesList from "./pages/ClientesList";
@@ -13,6 +14,29 @@ function App() {
       ? localStorage.getItem("username")
       : null
   );
+
+  // ✅ Validar token al arrancar la app
+  React.useEffect(() => {
+    const validateToken = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          // Llama a un endpoint protegido de tu backend
+          await api.get("/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          // Token válido → no hacemos nada
+        } catch (err) {
+          // Token inválido o expirado → cerrar sesión
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+          setUser(null);
+        }
+      }
+    };
+
+    validateToken();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
