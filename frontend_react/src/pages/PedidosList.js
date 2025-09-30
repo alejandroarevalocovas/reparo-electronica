@@ -520,23 +520,25 @@ function PedidosList() {
 
             {/* Estado */}
             <Grid item xs={6}>
-              <TextField
-                select
-                label="Estado"
-                name="estado"
-                value={newPedido.estado || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="dense"
-                size="small"
-                sx={{ minWidth: '400px' }}
-              >
-                <option value=""></option>
-                {ESTADOS.map((estado, idx) => (
-                  <option key={idx} value={estado.value}>{estado.value}</option>
-                ))}
-              </TextField>
-            </Grid>
+            <TextField
+              select
+              label="Estado"
+              name="estado"
+              value={newPedido.estado || ""}
+              onChange={handleChange}
+              fullWidth
+              margin="dense"
+              size="small"
+              sx={{ minWidth: '400px' }}
+            >
+              <MenuItem value="">Seleccione estado</MenuItem>
+              {ESTADOS.map((estado, idx) => (
+                <MenuItem key={idx} value={estado.value}>
+                  {estado.value}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
             {/* Fecha Reparacion */}
             <Grid item xs={6}>
