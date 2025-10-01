@@ -46,6 +46,8 @@ const ESTADOS = [
   { value: "Entregado sin reparar", label: "El cliente ha recogido el equipo tras no aprobar el presupuesto o ser irreparable." },
 ];
 
+const TIPO_COBRO = ["Cash", "Bizum", "Transferencia"];
+
 function PedidosList() {
   const [pedidos, setPedidos] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -502,6 +504,26 @@ function PedidosList() {
                 helperText={touchedFields.precio && !newPedido.precio ? "Este campo es obligatorio" : ""}
               />
             </Grid>
+
+            {/* Tipo cobro */}
+            <Grid item xs={6}>
+            <TextField
+              select
+              label="Tipo cobro"
+              name="tipo_cobro"
+              value={newPedido.tipo_cobro || ""}
+              onChange={handleChange}
+              fullWidth
+              margin="dense"
+              size="small"
+              sx={{ minWidth: '250px' }}
+            >
+              <MenuItem value="">Seleccione tipo de cobro</MenuItem>
+                {TIPO_COBRO.map((cat) => (
+                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
 
             {/* Fecha Pagado */}
             <Grid item xs={6}>

@@ -62,6 +62,7 @@ class Pedido(Base):
     fecha_pagado = Column(Date, nullable=True)
     tiempo_reparacion = Column(Integer, nullable=True)
     precio = Column(Numeric(10, 2), nullable=False)
+    tipo_cobro = Column(Text, nullable=True)
     comentarios = Column(Text, nullable=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
     numero_serie = Column(Text, nullable=False)
@@ -127,6 +128,7 @@ class PedidoBase(BaseModel):
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
     precio: float
+    tipo_cobro: Optional[str] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
     nombre_cliente: str
@@ -151,6 +153,7 @@ class PedidoCreate(BaseModel):
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
     precio: float
+    tipo_cobro: Optional[str] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
     comentarios: Optional[str] = None
@@ -305,6 +308,7 @@ def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(ge
             "fecha_pagado": pedido.fecha_pagado,
             "tiempo_reparacion": pedido.tiempo_reparacion,
             "precio": float(pedido.precio) if pedido.precio else None,
+            "tipo_cobro": pedido.tipo_cobro,
             "comentarios": pedido.comentarios,
             "cliente_id": pedido.cliente_id,
             "numero_serie": pedido.numero_serie,

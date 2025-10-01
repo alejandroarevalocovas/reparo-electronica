@@ -1,4 +1,3 @@
-// src/components/Layout.js
 import React, { useState } from "react";
 import { Outlet, Link } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -6,7 +5,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PersonIcon from "@mui/icons-material/Person";
 import InventoryIcon from "@mui/icons-material/Inventory";
-import { IconButton, Tooltip, Box, Button, Typography } from "@mui/material";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import { IconButton, Tooltip, Box, Button, Typography, Divider } from "@mui/material";
 
 function Layout({ user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(true);
@@ -41,8 +41,13 @@ function Layout({ user, onLogout }) {
           </IconButton>
         </Box>
 
-        {/* Navegación */}
-        <Box sx={{ flex: 1 }}>
+        {/* Sección Datos */}
+        <Box sx={{ flex: 1, mt: 2 }}>
+          {menuOpen && (
+            <Typography sx={{ px: 2, mb: 1, fontWeight: 600, fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+              DATOS
+            </Typography>
+          )}
           {/* Pedidos */}
           <Link to="/pedidos" style={{ textDecoration: "none", color: "inherit" }}>
             <Tooltip title="Pedidos" placement="right" disableHoverListener={menuOpen}>
@@ -99,6 +104,33 @@ function Layout({ user, onLogout }) {
               </Box>
             </Tooltip>
           </Link>
+
+          <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.3)" }} />
+
+          {/* Sección Gráficos */}
+          {menuOpen && (
+            <Typography sx={{ px: 2, mb: 1, fontWeight: 600, fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+              GRÁFICOS
+            </Typography>
+          )}
+          {/* Ejemplo página de gráficos */}
+          {/* <Link to="/graficos" style={{ textDecoration: "none", color: "inherit" }}>
+            <Tooltip title="Gráficos" placement="right" disableHoverListener={menuOpen}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  "&:hover": { bgcolor: "primary.dark" },
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                <ShowChartIcon />
+                {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Gráficos</Typography>}
+              </Box>
+            </Tooltip>
+          </Link> */}
         </Box>
 
         {/* Usuario y Logout */}
