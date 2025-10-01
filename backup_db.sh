@@ -4,10 +4,10 @@ set -e  # Detener el script si hay algún error
 # =============================
 # Configuración
 # =============================
-DB_URL="${DB_URL}"                           # Viene del secret de GitHub Actions
-BACKUP_DIR="/tmp/backups"                    # Carpeta temporal local en Actions
-REMOTE_DRIVE="gdrive:Reparo_electronica"    # Nombre del remoto en rclone
-RETENTION_DAYS=7                             # Cuántos días mantener
+DB_URL="${DB_URL}"                       # Viene del secret de GitHub Actions
+REMOTE_DRIVE="${REMOTE_DRIVE}"           # Viene del secret de GitHub Actions
+BACKUP_DIR="/tmp/backups"                # Carpeta temporal local en Actions
+RETENTION_DAYS=7                          # Cuántos días mantener
 
 # Crear carpeta temporal si no existe
 mkdir -p "$BACKUP_DIR"
@@ -31,7 +31,7 @@ rclone copy "$BACKUP_FILE" "$REMOTE_DRIVE" --progress
 echo "[$(date)] Backup subido correctamente"
 
 # =============================
-# Limpiar backups locales
+# Limpiar backup local
 # =============================
 rm -f "$BACKUP_FILE"
 echo "[$(date)] Backup temporal local eliminado"
