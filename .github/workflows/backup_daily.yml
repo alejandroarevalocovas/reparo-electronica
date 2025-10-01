@@ -29,7 +29,7 @@ jobs:
       - name: Set up Rclone config
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
 
       # 5️⃣ Dar permisos de ejecución al script
       - name: Give execute permission to backup script
