@@ -15,10 +15,10 @@ jobs:
         uses: actions/checkout@v3
 
       # 2️⃣ Instalar PostgreSQL 17 client
-      - name: Set up PostgreSQL 17 client
-        uses: harmon758/postgresql-action@v2
+      - name: Install PostgreSQL 17 client
+        uses: tj-actions/install-postgresql@v3
         with:
-          postgresql version: 17
+          postgresql-version: 17
 
       # 3️⃣ Instalar rclone
       - name: Install rclone
