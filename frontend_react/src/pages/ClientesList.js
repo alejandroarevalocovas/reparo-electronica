@@ -14,6 +14,7 @@ import {
   Alert,
   Box,
   MenuItem,
+  Typography,
 } from "@mui/material";
 
 function ClientesList() {
@@ -24,6 +25,7 @@ function ClientesList() {
   const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
   const [touchedFields, setTouchedFields] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -221,12 +223,49 @@ function ClientesList() {
 
         <DialogActions>
           <Button onClick={() => setOpenClienteModal(false)}>Cancelar</Button>
-          {editingCliente && <Button variant="outlined" color="error" onClick={handleDeleteCliente}>Eliminar</Button>}
+          {editingCliente && (
+            <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setOpenDeleteConfirm(true)}
+            >
+                Eliminar
+            </Button>
+          )}
           <Button variant="contained" color="primary" onClick={handleSubmitCliente}>
             {editingCliente ? "Guardar cambios" : "Crear"}
           </Button>
         </DialogActions>
       </Dialog>
+
+    {/* Modal confirmacion eliminacion Cliente */}
+      <Dialog
+        open={openDeleteConfirm}
+        onClose={() => setOpenDeleteConfirm(false)}
+        maxWidth="xs"
+        fullWidth
+        >
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+            <Typography>
+            ¿Estás seguro de que deseas eliminar el cliente "{editingCliente?.nombre}"?
+            </Typography>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => setOpenDeleteConfirm(false)}>Cancelar</Button>
+            <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+                handleDeleteCliente();
+                setOpenDeleteConfirm(false);
+            }}
+            >
+            Confirmar
+            </Button>
+        </DialogActions>
+        </Dialog>
+
 
       <Snackbar
         open={snackbar.open}

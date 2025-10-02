@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { MaterialReactTable } from "material-react-table";
 import { Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 
-function Table({ rows, columns, onRowClick }) {
+function Table({ rows, columns, onRowClick, initialStateSorting = {}, rowPropsBackground, onRowContextMenu }) {
   const [columnOrder, setColumnOrder] = useState(columns.map(c => c.accessorKey));
   const [openModal, setOpenModal] = useState(false);
   const [modalContent, setModalContent] = useState("");
@@ -62,12 +62,19 @@ function Table({ rows, columns, onRowClick }) {
         enableColumnActions
         enableColumnFilters
         enableSorting
-        initialState={{ pagination: { pageSize: 10 }, columnOrder }}
+        initialState={{ 
+          pagination: { pageSize: 10 }, 
+          columnOrder,
+          ...initialStateSorting,
+        }}
         onColumnOrderChange={setColumnOrder}
         
-        muiTableBodyRowProps={{
-          sx: { height: 50 }, // altura fija
-        }}
+        muiTableBodyRowProps={({ row }) => ({
+          sx: {
+            height: 50,
+            ...(rowPropsBackground ? rowPropsBackground(row).sx : {}),
+          },
+        })}
 
         muiTableBodyCellProps={({ cell }) => ({
           sx: {
@@ -79,8 +86,18 @@ function Table({ rows, columns, onRowClick }) {
             whiteSpace: "nowrap",
             cursor: onRowClick ? "pointer" : "default",
           },
-          onClick: () => onRowClick && onRowClick(cell.row.original),
+          // clic izquierdo
+          onClick: () => {
+            if (onRowClick) onRowClick(cell.row.original);
+          },
+          // clic derecho (opcional)
+          onContextMenu: (e) => {
+            if (!onRowContextMenu) return; // si no se pasa la función, no hace nada
+            e.preventDefault(); // evita menú del navegador
+            onRowContextMenu(e, cell.row.original);
+          },
         })}
+
 
         muiTableHeadCellProps={{
           sx: { py: 1, px: 1, fontWeight: "bold", cursor: "grab" },

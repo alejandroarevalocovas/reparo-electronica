@@ -23,6 +23,7 @@ import {
   TableCell,
   TableBody,
   IconButton,
+  Menu,
   MenuItem,
 } from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
@@ -74,6 +75,14 @@ function PedidosList() {
   //Modal info estado
   const [openEstadoInfo, setOpenEstadoInfo] = useState(false);
 
+  //Modal confirmar eliminacion
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+
+  //Menu contextual
+  const [contextMenu, setContextMenu] = useState(null);
+  const [contextPedido, setContextPedido] = useState(null);
+
+
   const token = localStorage.getItem("token");
 
   /** ---------------- Fetch pedidos ---------------- **/
@@ -86,15 +95,41 @@ function PedidosList() {
         const cols = Object.keys(data[0])
           .filter((key) => key !== "id" && key !== "cliente_id")
           .map((key) => {
-            // Formateo de columnas específicas
             let Cell = undefined;
+
             if (key === "precio" || key === "precio_stock" || key === "cobro_neto") {
-              Cell = ({ row }) => `${row.original[key]} €`;
+              Cell = ({ row }) => {
+                const value = row.original[key];
+                return `${value != null ? value : 0} €`; // si es null o undefined, mostrar 0
+              };
             } else if (key === "tiempo_reparacion") {
               Cell = ({ row }) => row.original[key] != null ? `${row.original[key]} min` : "";
+            } else if (key === "garantia") {
+              Cell = ({ row }) => (row.original.garantia ? "Sí" : "No");
+            } else if (key === "tiempo_garantia") {
+              Cell = ({ row }) => {
+                const { fecha_pagado, tiempo_garantia } = row.original;
+                if (!fecha_pagado || !tiempo_garantia) return "Garantía no empezada";
+
+                const fechaInicio = dayjs(fecha_pagado);
+                const fechaFin = fechaInicio.add(tiempo_garantia, "month");
+                const diffDays = fechaFin.diff(dayjs(), "day");
+
+                if (diffDays <= 0) return "Garantía vencida";
+
+                if (diffDays > 30) {
+                  const meses = Math.floor(diffDays / 30);
+                  const dias = diffDays % 30;
+                  const mesesText = meses === 1 ? "1 mes" : `${meses} meses`;
+                  const diasText = dias === 1 ? "1 día" : dias > 0 ? `${dias} días` : "";
+                  return diasText ? `${mesesText} y ${diasText}` : mesesText;
+                } else {
+                  return diffDays === 1 ? "1 día" : `${diffDays} días`;
+                }
+              };
             }
 
-            // Asignar header con condición especial para "precio"
+
             let header;
             if (key === "precio") {
               header = "COBRO CLIENTE";
@@ -102,13 +137,7 @@ function PedidosList() {
               header = key.replace(/_/g, " ").toUpperCase();
             }
 
-            return {
-              accessorKey: key,
-              id: key,
-              //header: key.replace(/_/g, " ").toUpperCase(),
-              header,
-              Cell, // si Cell es undefined, la tabla mostrará el valor normal
-            };
+            return { accessorKey: key, id: key, header, Cell };
           });
 
         // Añadir columna Stock como antes
@@ -130,7 +159,31 @@ function PedidosList() {
           ),
         });
 
-        setColumns(cols);
+        const COLUMN_ORDER = [
+          "fecha_entrada",
+          "equipo",
+          "numero_serie",
+          "part_number",
+          "problema",
+          "estado",
+          "comentarios",
+          "fecha_reparacion",
+          "fecha_pagado",
+          "tiempo_reparacion",
+          "precio",
+          "tipo_cobro",
+          "garantia",
+          "tiempo_garantia",
+          "precio_stock",
+          "cobro_neto",
+          "stock",
+        ];
+
+        const orderedCols = COLUMN_ORDER
+          .map((id) => cols.find((c) => c.id === id))
+          .filter(Boolean);
+
+        setColumns(orderedCols);
       }
 
       setPedidos(data);
@@ -161,7 +214,13 @@ function PedidosList() {
 
   const handleRowClick = (pedido) => {
     setEditingPedido(pedido);
-    setNewPedido({ ...pedido, cliente_id: pedido.cliente_id });
+
+    setNewPedido({
+      ...pedido,
+      cliente_id: pedido.cliente_id,
+      precio: pedido.precio ?? 0, // 👈 si es null/undefined, lo forzamos a 0
+    });
+
     setOpenPedidoModal(true);
   };
 
@@ -169,7 +228,7 @@ function PedidosList() {
   const handleSubmitPedido = async () => {
     // Campos obligatorios
     const requiredFields = ["cliente_id", "numero_serie", "equipo", "problema", "precio", "fecha_entrada"];
-
+    if (newPedido.fecha_pagado) requiredFields.push("tiempo_garantia");
     // Marcar todos los campos obligatorios como "touched" al intentar guardar
     let newTouched = {};
     requiredFields.forEach(f => { newTouched[f] = true; });
@@ -219,6 +278,13 @@ function PedidosList() {
     }
   };
 
+  /** ---------------- Colorear fila si garantia true ---------------- **/
+  const rowProps = (row) => ({
+    sx: {
+      backgroundColor: row.original.garantia ? "#ebdd5cff" : "inherit",
+    },
+  });
+
 
   const handleDeletePedido = async () => {
     try {
@@ -234,6 +300,36 @@ function PedidosList() {
       setSnackbar({ open: true, message: "Error al eliminar pedido", severity: "error" });
     }
   };
+
+  const handleRowRightClick = (e, pedido) => {
+    e.preventDefault();
+    setContextPedido(pedido);
+    setContextMenu(
+      contextMenu === null
+        ? { mouseX: e.clientX + 2, mouseY: e.clientY - 6 }
+        : null,
+    );
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  const handleCopyPedido = (pedido) => {
+    const { id, fecha_reparacion, fecha_pagado, ...pedidoToCopy } = pedido;
+
+    setNewPedido({
+      ...pedidoToCopy,
+      cliente_id: pedido.cliente_id,
+      precio: pedidoToCopy.precio ?? 0,
+    });
+
+    setEditingPedido(null);
+    setStockAsignado([]);
+    setOpenPedidoModal(true);
+  };
+
+
 
   /** ---------------- Nuevo Cliente ---------------- **/
   const handleSubmitCliente = async () => {
@@ -360,8 +456,42 @@ function PedidosList() {
           Añadir Pedido
         </Button>
 
-        <Table rows={pedidos} columns={columns} onRowClick={handleRowClick} compact />
+        <Table rows={pedidos} 
+               columns={columns} 
+               onRowClick={handleRowClick} 
+               compact
+               onRowContextMenu={handleRowRightClick} 
+               rowPropsBackground={(row) => ({
+                  sx: {
+                    backgroundColor: row.original.garantia ? "#ebdd5cff" : "inherit",
+                  },
+                })}
+               initialStateSorting={{
+                  sorting: [{ id: "fecha_entrada", desc: true }],
+                }}
+        />
       </Box>
+
+    {/* Menu copiar pedido */}
+      <Menu
+      open={contextMenu !== null}
+      onClose={handleCloseContextMenu}
+      anchorReference="anchorPosition"
+      anchorPosition={
+        contextMenu !== null
+          ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+          : undefined
+      }
+    >
+      <MenuItem
+        onClick={() => {
+          handleCopyPedido(contextPedido);
+          handleCloseContextMenu();
+        }}
+      >
+        Crear nuevo pedido a partir de este
+      </MenuItem>
+    </Menu>
 
       {/* Modal Crear/Editar Pedido */}
       <Dialog 
@@ -495,13 +625,15 @@ function PedidosList() {
                 label="Cobro Cliente"
                 name="precio"
                 fullWidth
-                value={newPedido.precio || ""}
+                value={newPedido.precio ?? ""}
                 onChange={handleChange}
                 margin="dense"
                 size="small"
                 required
-                error={touchedFields.precio && !newPedido.precio}
-                helperText={touchedFields.precio && !newPedido.precio ? "Este campo es obligatorio" : ""}
+                error={touchedFields.precio && (newPedido.precio === "" || newPedido.precio === null || newPedido.precio === undefined)}
+                helperText={touchedFields.precio && (newPedido.precio === "" || newPedido.precio === null || newPedido.precio === undefined) 
+                  ? "Este campo es obligatorio" 
+                  : ""}
               />
             </Grid>
 
@@ -538,6 +670,40 @@ function PedidosList() {
                   }}
                 />
               </LocalizationProvider>
+            </Grid>
+
+            {/* Garantía */}
+            <Grid item xs={6}>
+              <TextField
+                select
+                label="Garantía"
+                name="garantia"
+                value={newPedido.garantia ? "Sí" : "No"}
+                onChange={(e) => setNewPedido({ ...newPedido, garantia: e.target.value === "Sí" })}
+                fullWidth
+                margin="dense"
+                size="small"
+                sx={{ minWidth: '200px' }}
+              >
+                <MenuItem value="Sí">Sí</MenuItem>
+                <MenuItem value="No">No</MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* Tiempo Garantía */}
+            <Grid item xs={6}>
+              <TextField
+                label="Tiempo Garantía (meses)"
+                name="tiempo_garantia"
+                type="number"
+                value={newPedido.tiempo_garantia || ""}
+                onChange={handleChange}
+                fullWidth
+                margin="dense"
+                size="small"
+                error={touchedFields.tiempo_garantia && !newPedido.tiempo_garantia && newPedido.fecha_pagado}
+                helperText={touchedFields.tiempo_garantia && !newPedido.tiempo_garantia && newPedido.fecha_pagado ? "Obligatorio si fecha pagado existe" : ""}
+              />
             </Grid>
 
             {/* Estado */}
@@ -618,7 +784,15 @@ function PedidosList() {
 
         <DialogActions>
           <Button onClick={() => setOpenPedidoModal(false)}>Cancelar</Button>
-          {editingPedido && <Button variant="outlined" color="error" onClick={handleDeletePedido}>Eliminar</Button>}
+          {editingPedido && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setOpenDeleteConfirm(true)}
+            >
+              Eliminar
+            </Button>
+          )}
           <Button 
             variant="contained" 
             color="primary" 
@@ -633,6 +807,35 @@ function PedidosList() {
             }}
           >
             {editingPedido ? "Guardar cambios" : "Crear"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal confirmar eliminacion */}
+
+      <Dialog
+        open={openDeleteConfirm}
+        onClose={() => setOpenDeleteConfirm(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+          <Typography>
+            ¿Estás seguro de que deseas eliminar el pedido #{editingPedido?.numero_serie}?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteConfirm(false)}>Cancelar</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              handleDeletePedido();
+              setOpenDeleteConfirm(false);
+            }}
+          >
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

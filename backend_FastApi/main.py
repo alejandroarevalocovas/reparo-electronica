@@ -3,7 +3,7 @@
 
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from passlib.hash import bcrypt
@@ -67,6 +67,8 @@ class Pedido(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
     numero_serie = Column(Text, nullable=False)
     part_number = Column(Text, nullable=True)
+    garantia = Column(Boolean, nullable=True)
+    tiempo_garantia = Column(Integer, nullable=True)
     
 
     cliente = relationship("Cliente")
@@ -135,6 +137,8 @@ class PedidoBase(BaseModel):
     comentarios: Optional[str] = None
     precio_stock: Optional[float] = None
     cobro_neto: Optional[float] = None
+    garantia: Optional[bool] = None
+    tiempo_garantia: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -157,6 +161,8 @@ class PedidoCreate(BaseModel):
     fecha_pagado: Optional[date] = None
     cliente_id: int
     comentarios: Optional[str] = None
+    garantia: Optional[bool] = None
+    tiempo_garantia: Optional[int] = None
     stocks: Optional[List[PedidoStockAsignacion]] = None  # <-- lista de stock al crear
 
 class ClienteBase(BaseModel):
@@ -313,6 +319,8 @@ def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(ge
             "cliente_id": pedido.cliente_id,
             "numero_serie": pedido.numero_serie,
             "part_number": pedido.part_number,
+            "garantia": pedido.garantia,
+            "tiempo_garantia": pedido.tiempo_garantia,
             "precio_stock": round(precio_stock_total, 2),
             "cobro_neto": round(
                 (float(pedido.precio) if pedido.precio else 0) - precio_stock_total, 2

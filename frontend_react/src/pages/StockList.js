@@ -41,6 +41,9 @@ function StockList() {
   const [openVerDetalles, setOpenVerDetalles] = useState(false);
   const [detallesView, setDetallesView] = useState({});
 
+  // --- Modal confirmar eliminacion ---
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+
   const token = localStorage.getItem("token");
 
   // -------------------- FETCH STOCK --------------------
@@ -323,10 +326,14 @@ function StockList() {
         <DialogActions>
           <Button onClick={() => setOpenStockModal(false)}>Cancelar</Button>
           {editingStock && (
-            <Button variant="outlined" color="error" onClick={handleDeleteStock}>
-              Eliminar
+            <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setOpenDeleteConfirm(true)}
+            >
+                Eliminar
             </Button>
-          )}
+            )}
           <Button
             variant="contained"
             color="primary"
@@ -354,6 +361,35 @@ function StockList() {
           </Button>
         </DialogActions>
       </Dialog>
+
+    {/* Modal confirmacion eliminacion stock */}
+      <Dialog
+        open={openDeleteConfirm}
+        onClose={() => setOpenDeleteConfirm(false)}
+        maxWidth="xs"
+        fullWidth
+        >
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+            <Typography>
+            ¿Estás seguro de que deseas eliminar el stock "{editingStock?.referencia}"?
+            </Typography>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => setOpenDeleteConfirm(false)}>Cancelar</Button>
+            <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+                handleDeleteStock();
+                setOpenDeleteConfirm(false);
+            }}
+            >
+            Confirmar
+            </Button>
+        </DialogActions>
+        </Dialog>
+
 
       {/* Modal Detalles */}
       <Dialog open={openDetallesModal} onClose={() => setOpenDetallesModal(false)} maxWidth="md" fullWidth>
