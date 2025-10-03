@@ -31,6 +31,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Visibility } from "@mui/icons-material";
 dayjs.locale("es");
 
 const ESTADOS = [
@@ -55,9 +56,6 @@ function PedidosList() {
   const [openPedidoModal, setOpenPedidoModal] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
   const [newPedido, setNewPedido] = useState({});
-  const [clientes, setClientes] = useState([]);
-  const [openClienteModal, setOpenClienteModal] = useState(false);
-  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [touchedFields, setTouchedFields] = useState({});
 
@@ -82,6 +80,12 @@ function PedidosList() {
   const [contextMenu, setContextMenu] = useState(null);
   const [contextPedido, setContextPedido] = useState(null);
 
+  //Clientes
+  const [clientes, setClientes] = useState([]); // lista de clientes
+  const [openClienteModal, setOpenClienteModal] = useState(false);
+  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+  const [clienteInfo, setClienteInfo] = useState(null); // para mostrar en el modal
+  const [openClienteInfo, setOpenClienteInfo] = useState(false); // control del modal
 
   const token = localStorage.getItem("token");
 
@@ -133,6 +137,9 @@ function PedidosList() {
             let header;
             if (key === "precio") {
               header = "COBRO CLIENTE";
+            } 
+            else if (key === "garantia") {
+              header = "EN GARANTIA";
             } else {
               header = key.replace(/_/g, " ").toUpperCase();
             }
@@ -207,6 +214,16 @@ function PedidosList() {
     fetchClientes();
   }, [token]);
 
+  // 👉 handler para ver cliente
+  const handleViewCliente = () => {
+    if (!newPedido.cliente_id) return; // no hay cliente seleccionado
+    const cliente = clientes.find(c => c.id === newPedido.cliente_id);
+    if (cliente) {
+      setClienteInfo(cliente);
+      setOpenClienteInfo(true);
+    }
+  };
+
   const handleChange = (e) => setNewPedido({ ...newPedido, [e.target.name]: e.target.value });
   const handleDateChange = (name, value) => {
     setNewPedido({ ...newPedido, [name]: value ? dayjs(value).format("YYYY-MM-DD") : null });
@@ -236,13 +253,17 @@ function PedidosList() {
 
     // Validación: si falta algún campo, mostrar snackbar y salir
     for (const field of requiredFields) {
-      if (!newPedido[field]) {
+      if (
+        newPedido[field] === null ||
+        newPedido[field] === undefined ||
+        newPedido[field] === ""
+      ) {
         setSnackbar({ 
           open: true, 
           message: `El campo "${field.replace(/_/g, ' ')}" es obligatorio`, 
           severity: "error" 
         });
-        return; // Salir si hay campo vacío
+        return;
       }
     }
 
@@ -590,34 +611,55 @@ function PedidosList() {
 
             {/* Cliente */}
             <Grid item xs={6}>
-              <Autocomplete
-                options={clientes}
-                getOptionLabel={(option) => option.nombre}
-                value={clientes.find((c) => c.id === newPedido.cliente_id) || null}
-                onChange={(e, value) => setNewPedido({ ...newPedido, cliente_id: value ? value.id : null })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Cliente"
-                    fullWidth
-                    margin="dense"
-                    size="small"
-                    required
-                    error={touchedFields.cliente_id && !newPedido.cliente_id}
-                    helperText={touchedFields.cliente_id && !newPedido.cliente_id ? "Este campo es obligatorio" : ""}
-                    sx={{ minWidth: '200px' }}
-                  />
-                )}
-              />
-              <Button 
-                variant="outlined" 
-                color="secondary" 
-                onClick={() => setOpenClienteModal(true)} 
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Autocomplete
+                  options={clientes}
+                  getOptionLabel={(option) => option.nombre}
+                  value={clientes.find((c) => c.id === newPedido.cliente_id) || null}
+                  onChange={(e, value) =>
+                    setNewPedido({ ...newPedido, cliente_id: value ? value.id : null })
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Cliente"
+                      fullWidth
+                      margin="dense"
+                      size="small"
+                      required
+                      error={touchedFields.cliente_id && !newPedido.cliente_id}
+                      helperText={
+                        touchedFields.cliente_id && !newPedido.cliente_id
+                          ? "Este campo es obligatorio"
+                          : ""
+                      }
+                      sx={{ minWidth: "200px" }}
+                    />
+                  )}
+                  sx={{ flex: 1 }}
+                />
+
+                {/* 👁️ Botón de ver cliente */}
+                <Button
+                  onClick={handleViewCliente}
+                  disabled={!newPedido.cliente_id}
+                  sx={{ ml: 1, minWidth: "40px", height: "40px" }}
+                >
+                  <Visibility />
+                </Button>
+              </Box>
+
+              {/* Botón para crear nuevo cliente debajo */}
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => setOpenClienteModal(true)}
                 sx={{ mt: 1 }}
               >
                 Nuevo Cliente
               </Button>
             </Grid>
+
 
             {/* Cobro Cliente */}
             <Grid item xs={6}>
@@ -952,6 +994,33 @@ function PedidosList() {
         </Button>
       </DialogActions>
     </Dialog>
+
+    {/* Modal info cliente */}
+    <Dialog
+      open={openClienteInfo}
+      onClose={() => setOpenClienteInfo(false)}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle>Información del Cliente</DialogTitle>
+      <DialogContent>
+        {clienteInfo ? (
+          <Box sx={{ p: 1 }}>
+            <p><strong>Nombre:</strong> {clienteInfo.nombre}</p>
+            <p><strong>Localización:</strong> {clienteInfo.localizacion}</p>
+            <p><strong>Contacto:</strong> {clienteInfo.contacto}</p>
+            <p><strong>Categoría:</strong> {clienteInfo.categoria}</p>
+          </Box>
+        ) : (
+          <p>No se encontró información del cliente.</p>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpenClienteInfo(false)}>Cerrar</Button>
+      </DialogActions>
+    </Dialog>
+
 
       {/* Modal Ver Stock */}
       <Dialog open={openStockModal} onClose={() => setOpenStockModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
