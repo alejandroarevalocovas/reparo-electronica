@@ -83,9 +83,20 @@ function PedidosList() {
   //Clientes
   const [clientes, setClientes] = useState([]); // lista de clientes
   const [openClienteModal, setOpenClienteModal] = useState(false);
-  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "", contacta_por: "" });
   const [clienteInfo, setClienteInfo] = useState(null); // para mostrar en el modal
   const [openClienteInfo, setOpenClienteInfo] = useState(false); // control del modal
+
+  //Stock nuevo
+  const [openNuevoStockModal, setOpenNuevoStockModal] = useState(false);
+  const [nuevoStock, setNuevoStock] = useState({
+    referencia: "",
+    tipo: "",
+    cantidad: "",
+    cantidad_total: "",
+    precio: "",
+  });
+  const [erroresNuevoStock, setErroresNuevoStock] = useState({});
 
   const token = localStorage.getItem("token");
 
@@ -97,11 +108,11 @@ function PedidosList() {
       //console.log("DATAAAAAAAAAAA",res.data)
       if (data.length > 0) {
         const cols = Object.keys(data[0])
-          .filter((key) => key !== "id" && key !== "cliente_id")
+          .filter((key) => key !== "id" && key !== "cliente_id" && key != "precio_total")
           .map((key) => {
             let Cell = undefined;
 
-            if (key === "precio" || key === "precio_stock" || key === "cobro_neto") {
+            if (key === "precio" || key === "precio_stock" || key === "cobro_neto" || key === "pendiente_pago") {
               Cell = ({ row }) => {
                 const value = row.original[key];
                 return `${value != null ? value : 0} €`; // si es null o undefined, mostrar 0
@@ -136,7 +147,7 @@ function PedidosList() {
 
             let header;
             if (key === "precio") {
-              header = "COBRO CLIENTE";
+              header = "COBRADO";
             } 
             else if (key === "garantia") {
               header = "EN GARANTIA";
@@ -179,6 +190,7 @@ function PedidosList() {
           "tiempo_reparacion",
           "precio",
           "tipo_cobro",
+          "pendiente_pago",
           "garantia",
           "tiempo_garantia",
           "precio_stock",
@@ -244,7 +256,7 @@ function PedidosList() {
   /** ---------------- Crear/Editar Pedido ---------------- **/
   const handleSubmitPedido = async () => {
     // Campos obligatorios
-    const requiredFields = ["cliente_id", "numero_serie", "equipo", "problema", "precio", "fecha_entrada"];
+    const requiredFields = ["cliente_id", "numero_serie", "equipo", "problema", "precio","precio_total", "fecha_entrada"];
     if (newPedido.fecha_pagado) requiredFields.push("tiempo_garantia");
     // Marcar todos los campos obligatorios como "touched" al intentar guardar
     let newTouched = {};
@@ -265,6 +277,15 @@ function PedidosList() {
         });
         return;
       }
+    }
+
+    if (parseFloat(newPedido.precio) > parseFloat(newPedido.precio_total)) {
+      setSnackbar({
+        open: true,
+        message: "El importe cobrado no puede ser mayor que el cobro total.",
+        severity: "error",
+      });
+      return; // detenemos la ejecución, no guarda
     }
 
     try {
@@ -360,7 +381,7 @@ function PedidosList() {
       setNewPedido({ ...newPedido, cliente_id: res.data.id });
       setSnackbar({ open: true, message: "Cliente creado correctamente", severity: "success" });
       setOpenClienteModal(false);
-      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "", contacta_por: "" });
     } catch (err) {
       console.error(err);
       setSnackbar({ open: true, message: "Error al crear cliente", severity: "error" });
@@ -457,6 +478,46 @@ function PedidosList() {
       prev.map((s) => (s.id === stock_id ? { ...s, cantidad: s.cantidad + removed.cantidad_usada } : s))
     );
   };
+
+   /** ---------------- Nuevo Stock ---------------- **/
+  const handleCreateStock = async () => {
+  try {
+    const res = await api.post("/stock/", nuevoStock, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // 🔥 Añadir nuevo stock a la lista de stock disponible (sin cerrar el modal de asignar stock)
+    setStockDisponible((prev) => [...prev, nuevoStock]);
+
+    // Mostrar mensaje de éxito
+    setSnackbar({
+      open: true,
+      message: "Nuevo stock creado correctamente",
+      severity: "success",
+    });
+
+    // Cerrar solo el modal de creación de stock, no el de asignación
+    setOpenNuevoStockModal(false);
+
+    // Limpiar campos
+    setNuevoStock({
+      referencia: "",
+      tipo: "",
+      cantidad: "",
+      cantidad_total: "",
+      precio: "",
+    });
+    setErroresNuevoStock({});
+  } catch (err) {
+    console.error(err);
+    setSnackbar({
+      open: true,
+      message: "Error al crear el stock",
+      severity: "error",
+    });
+  }
+};
+
 
   /** ---------------- Guardar cambios localmente ---------------- **/
   const handleSaveStockAsignado = () => {
@@ -660,11 +721,29 @@ function PedidosList() {
               </Button>
             </Grid>
 
-
-            {/* Cobro Cliente */}
+             {/* Cobro total */}
             <Grid item xs={6}>
               <TextField
-                label="Cobro Cliente"
+                label="Cobro total"
+                name="precio_total"
+                fullWidth
+                value={newPedido.precio_total ?? ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                required
+                error={touchedFields.precio_total && (newPedido.precio_total === "" || newPedido.precio_total === null || newPedido.precio_total === undefined)}
+                helperText={touchedFields.precio_total && (newPedido.precio_total === "" || newPedido.precio_total === null || newPedido.precio_total === undefined) 
+                  ? "Este campo es obligatorio" 
+                  : ""}
+              />
+            </Grid>
+
+
+            {/* Cobrado */}
+            <Grid item xs={6}>
+              <TextField
+                label="Cobrado"
                 name="precio"
                 fullWidth
                 value={newPedido.precio ?? ""}
@@ -960,6 +1039,20 @@ function PedidosList() {
               ))}
             </TextField>
           </Grid>
+
+          {/* Contacta por */}
+          <Grid item xs={12}>
+            <TextField
+              label="Contacta por"
+              name="contacta_por"
+              fullWidth
+              value={newCliente.contacta_por || ""}
+              onChange={(e) => setNewCliente({ ...newCliente, contacta_por: e.target.value })}
+              margin="dense"
+              size="small"
+            />
+          </Grid>
+
         </Grid>
       </DialogContent>
 
@@ -1011,6 +1104,7 @@ function PedidosList() {
             <p><strong>Localización:</strong> {clienteInfo.localizacion}</p>
             <p><strong>Contacto:</strong> {clienteInfo.contacto}</p>
             <p><strong>Categoría:</strong> {clienteInfo.categoria}</p>
+            <p><strong>Contacta por:</strong> {clienteInfo.contacta_por}</p>
           </Box>
         ) : (
           <p>No se encontró información del cliente.</p>
@@ -1167,9 +1261,83 @@ function PedidosList() {
           </Box>
         </DialogContent>
         <DialogActions>
+          <Button
+            variant="outlined"
+            size="small"
+            color="secondary"
+            onClick={() => setOpenNuevoStockModal(true)}
+          >
+            Nuevo Stock
+          </Button>
           <Button onClick={() => setOpenAsignarStockModal(false)}>Cancelar</Button>
           <Button variant="contained" color="primary" onClick={handleSaveStockAsignado}>
             Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Nuevo Stock */}
+      <Dialog
+        open={openNuevoStockModal}
+        onClose={() => setOpenNuevoStockModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Nuevo Stock</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2}>
+            {[
+              { key: "referencia", label: "Referencia", required: true },
+              { key: "tipo", label: "Tipo", required: true },
+              { key: "cantidad", label: "Cantidad Disponible", required: true },
+              { key: "cantidad_total", label: "Cantidad Comprada", required: true },
+              { key: "precio", label: "Precio (€)", required: true },
+            ].map((field) => (
+              <Grid item xs={6} key={field.key}>
+                <TextField
+                  label={field.label}
+                  name={field.key}
+                  fullWidth
+                  size="small"
+                  required={field.required}
+                  value={nuevoStock[field.key]}
+                  onChange={(e) =>
+                    setNuevoStock({ ...nuevoStock, [field.key]: e.target.value })
+                  }
+                  error={!!erroresNuevoStock[field.key]}
+                  helperText={erroresNuevoStock[field.key] || ""}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenNuevoStockModal(false)}>Cancelar</Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              // Validar campos obligatorios
+              const requiredFields = ["referencia", "tipo", "cantidad", "cantidad_total", "precio"];
+              const nuevosErrores = {};
+              let hayErrores = false;
+
+              requiredFields.forEach((field) => {
+                if (!nuevoStock[field] || nuevoStock[field].toString().trim() === "") {
+                  nuevosErrores[field] = "Este campo es obligatorio";
+                  hayErrores = true;
+                }
+              });
+
+              setErroresNuevoStock(nuevosErrores);
+
+              if (hayErrores) return; 
+
+              handleCreateStock();
+              
+            }}
+          >
+            Crear
           </Button>
         </DialogActions>
       </Dialog>

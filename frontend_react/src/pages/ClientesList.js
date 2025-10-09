@@ -22,7 +22,7 @@ function ClientesList() {
   const [columns, setColumns] = useState([]);
   const [openClienteModal, setOpenClienteModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
-  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+  const [newCliente, setNewCliente] = useState({ nombre: "", localizacion: "", contacto: "", categoria: "" , contacta_por: "" });
   const [touchedFields, setTouchedFields] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
@@ -109,7 +109,7 @@ function ClientesList() {
       setClientes(prev => prev.filter(c => c.id !== editingCliente.id));
       setSnackbar({ open: true, message: "Cliente eliminado correctamente", severity: "success" });
       setOpenClienteModal(false);
-      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "" });
+      setNewCliente({ nombre: "", localizacion: "", contacto: "", categoria: "", contacta_por: ""  });
       setEditingCliente(null);
       setTouchedFields({});
     } catch (err) {
@@ -217,6 +217,19 @@ function ClientesList() {
                 <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                 ))}
             </TextField>
+            </Grid>
+
+            {/* Contacta por */}
+            <Grid item xs={12}>
+              <TextField
+                label="Contacta por"
+                name="contacta_por"
+                fullWidth
+                value={newCliente.contacta_por || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+              />
             </Grid>
           </Grid>
         </DialogContent>

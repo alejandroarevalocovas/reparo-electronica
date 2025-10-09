@@ -62,6 +62,7 @@ class Pedido(Base):
     fecha_pagado = Column(Date, nullable=True)
     tiempo_reparacion = Column(Integer, nullable=True)
     precio = Column(Numeric(10, 2), nullable=False)
+    precio_total = Column(Numeric(10, 2), nullable=True)
     tipo_cobro = Column(Text, nullable=True)
     comentarios = Column(Text, nullable=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
@@ -81,6 +82,7 @@ class Cliente(Base):
     localizacion = Column(String(100), nullable=True)
     contacto = Column(String(100), nullable=False)
     categoria = Column(String(100), nullable=False)
+    contacta_por = Column(String(100), nullable=True)
 
 class Stock(Base):
     __tablename__ = "stock"
@@ -130,6 +132,8 @@ class PedidoBase(BaseModel):
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
     precio: float
+    precio_total: float
+    pendiente_pago: Optional[float] = None
     tipo_cobro: Optional[str] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
@@ -157,6 +161,7 @@ class PedidoCreate(BaseModel):
     fecha_reparacion: Optional[date] = None
     tiempo_reparacion: Optional[int] = None
     precio: float
+    precio_total: float
     tipo_cobro: Optional[str] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
@@ -171,6 +176,7 @@ class ClienteBase(BaseModel):
     localizacion: Optional[str] = None
     contacto: str
     categoria: str
+    contacta_por: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -180,6 +186,7 @@ class ClienteCreate(BaseModel):
     localizacion: Optional[str] = None
     contacto: str
     categoria: str
+    contacta_por: Optional[str] = None
 
 class StockBase(BaseModel):
     id: int
@@ -314,6 +321,10 @@ def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(ge
             "fecha_pagado": pedido.fecha_pagado,
             "tiempo_reparacion": pedido.tiempo_reparacion,
             "precio": float(pedido.precio) if pedido.precio else None,
+            "precio_total": float(pedido.precio_total) if pedido.precio_total else None,
+            "pendiente_pago": round(
+                (float(pedido.precio_total) if pedido.precio_total else 0) - float(pedido.precio), 2
+            ),
             "tipo_cobro": pedido.tipo_cobro,
             "comentarios": pedido.comentarios,
             "cliente_id": pedido.cliente_id,

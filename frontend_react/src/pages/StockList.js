@@ -258,7 +258,7 @@ function StockList() {
               { key: "formato", label: "Formato" },
               { key: "fecha_actual", label: "Fecha Actual", type: "date" },
               { key: "cantidad_total", label: "Cantidad Comprada", required: true },
-              { key: "cantidad", label: "Cantidad Disponible" },
+              { key: "cantidad", label: "Cantidad Disponible", required: true },
               { key: "precio", label: "Precio (€)", required: true },
              // { key: "precio_unidad", label: "Precio Unidad" },
               { key: "fecha_compra", label: "Fecha Compra", type: "date" },
@@ -338,7 +338,7 @@ function StockList() {
             variant="contained"
             color="primary"
             onClick={() => {
-              const requiredFields = ["referencia", "tipo", "precio", "cantidad_total"];
+              const requiredFields = ["referencia", "tipo", "precio", "cantidad_total","cantidad"];
               let newTouched = {};
               requiredFields.forEach((f) => (newTouched[f] = true));
               setTouchedFields(newTouched);
