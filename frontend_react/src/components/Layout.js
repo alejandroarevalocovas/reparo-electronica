@@ -6,6 +6,8 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import PersonIcon from "@mui/icons-material/Person";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import { IconButton, Tooltip, Box, Button, Typography, Divider } from "@mui/material";
 
 function Layout({ user, onLogout }) {
@@ -44,10 +46,19 @@ function Layout({ user, onLogout }) {
         {/* Sección Datos */}
         <Box sx={{ flex: 1, mt: 2 }}>
           {menuOpen && (
-            <Typography sx={{ px: 2, mb: 1, fontWeight: 600, fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+            <Typography
+              sx={{
+                px: 2,
+                mb: 1,
+                fontWeight: 600,
+                fontSize: 12,
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
               DATOS
             </Typography>
           )}
+
           {/* Pedidos */}
           <Link to="/pedidos" style={{ textDecoration: "none", color: "inherit" }}>
             <Tooltip title="Pedidos" placement="right" disableHoverListener={menuOpen}>
@@ -109,13 +120,22 @@ function Layout({ user, onLogout }) {
 
           {/* Sección Gráficos */}
           {menuOpen && (
-            <Typography sx={{ px: 2, mb: 1, fontWeight: 600, fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
-              GRÁFICOS
+            <Typography
+              sx={{
+                px: 2,
+                mb: 1,
+                fontWeight: 600,
+                fontSize: 12,
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
+              DASHBOARDS
             </Typography>
           )}
-          {/* Ejemplo página de gráficos */}
-          {/* <Link to="/graficos" style={{ textDecoration: "none", color: "inherit" }}>
-            <Tooltip title="Gráficos" placement="right" disableHoverListener={menuOpen}>
+
+          {/* Finanzas */}
+          <Link to="/dashboard/finanzas" style={{ textDecoration: "none", color: "inherit" }}>
+            <Tooltip title="Dashboard Finanzas" placement="right" disableHoverListener={menuOpen}>
               <Box
                 sx={{
                   display: "flex",
@@ -127,10 +147,29 @@ function Layout({ user, onLogout }) {
                 }}
               >
                 <ShowChartIcon />
-                {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Gráficos</Typography>}
+                {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Finanzas</Typography>}
               </Box>
             </Tooltip>
-          </Link> */}
+          </Link>
+
+          {/* Estadísticas */}
+          <Link to="/dashboard/estadisticas" style={{ textDecoration: "none", color: "inherit" }}>
+            <Tooltip title="Dashboard Estadísticas" placement="right" disableHoverListener={menuOpen}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  "&:hover": { bgcolor: "primary.dark" },
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                }}
+              >
+                <BarChartIcon />
+                {menuOpen && <Typography sx={{ ml: 2, fontWeight: 500 }}>Estadísticas</Typography>}
+              </Box>
+            </Tooltip>
+          </Link>
         </Box>
 
         {/* Usuario y Logout */}

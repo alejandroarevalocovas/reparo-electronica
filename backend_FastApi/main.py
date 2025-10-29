@@ -3,7 +3,7 @@
 
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date, Boolean, func
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from passlib.hash import bcrypt
@@ -570,3 +570,113 @@ def eliminar_stock(stock_id: int, db: Session = Depends(get_db), current_user: s
     db.delete(stock)
     db.commit()
     return {"message": "Stock eliminado correctamente"}
+
+# --------------------------------- DASHBOARD / FINANZAS -------------------------------
+@app.get("/dashboard/resumen", response_model=dict)
+def obtener_resumen_dashboard(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+    """Resumen financiero general para el Dashboard"""
+
+    total_pedidos = db.query(func.count(Pedido.id)).scalar()
+    total_ingresos = db.query(func.sum(Pedido.precio_total)).scalar() or 0
+    total_pendiente = db.query(func.sum(Pedido.precio_total - Pedido.precio)).scalar() or 0
+    pedidos_pendientes = db.query(func.count(Pedido.id)).filter(Pedido.estado != "pagado").scalar()
+    pedidos_garantia = db.query(func.count(Pedido.id)).filter(Pedido.garantia == True).scalar()
+
+    return {
+        "total_pedidos": total_pedidos,
+        "total_ingresos": float(total_ingresos),
+        "total_pendiente": float(total_pendiente),
+        "pedidos_pendientes": pedidos_pendientes,
+        "pedidos_garantia": pedidos_garantia
+    }
+
+
+# @app.get("/dashboard/por_mes", response_model=list[dict])
+# def obtener_datos_por_mes(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+#     """Devuelve ingresos y cantidad de pedidos agrupados por mes (para gráficos)"""
+#     resultados = (
+#         db.query(
+#             func.date_trunc('month', Pedido.fecha_entrada).label("mes"),
+#             func.sum(Pedido.precio_total).label("ingresos"),
+#             func.count(Pedido.id).label("pedidos")
+#         )
+#         .group_by(func.date_trunc('month', Pedido.fecha_entrada))
+#         .order_by(func.date_trunc('month', Pedido.fecha_entrada))
+#         .all()
+#     )
+
+#     datos = []
+#     for r in resultados:
+#         datos.append({
+#             "mes": r.mes.strftime("%Y-%m"),
+#             "ingresos": float(r.ingresos or 0),
+#             "pedidos": r.pedidos
+#         })
+#     return datos
+
+@app.get("/dashboard/finanzas/mensual", response_model=list[dict])
+def dashboard_finanzas_mensual(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Devuelve los ingresos, gastos y beneficios mensuales
+    basados solo en pedidos 'Entregado / Cerrado'
+    agrupados por mes (fecha_reparacion)
+    """
+    pedidos = (
+        db.query(Pedido)
+        .filter(Pedido.estado == "Entregado / Cerrado")
+        .filter(Pedido.fecha_reparacion != None)
+        .all()
+    )
+
+    resultados_por_mes = {}
+
+    for pedido in pedidos:
+        if not pedido.fecha_reparacion:
+            continue
+
+        mes = pedido.fecha_reparacion.month
+        anio = pedido.fecha_reparacion.year
+
+        # 💰 Ingreso cliente
+        ingreso_cliente = float(pedido.precio or 0)
+
+        # 🧾 Gasto en stock asignado
+        gasto_stock_total = 0.0
+        for ps in pedido.stocks:
+            if ps.stock and ps.stock.precio and ps.stock.cantidad_total:
+                precio_unitario = float(ps.stock.precio) / ps.stock.cantidad_total
+                gasto_stock_total += precio_unitario * ps.cantidad_usada
+
+        beneficio = ingreso_cliente - gasto_stock_total
+
+        key = (anio, mes)
+        if key not in resultados_por_mes:
+            resultados_por_mes[key] = {"ingresos": 0.0, "gastos": 0.0, "beneficio": 0.0}
+
+        resultados_por_mes[key]["ingresos"] += ingreso_cliente
+        resultados_por_mes[key]["gastos"] += gasto_stock_total
+        resultados_por_mes[key]["beneficio"] += beneficio
+
+    # 🔄 Convertir a lista ordenada con nombres de mes en español
+    meses_es = {
+        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+        5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+        9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+    }
+
+    # 🔄 Convertir a lista ordenada
+    salida = []
+    for (anio, mes), valores in sorted(resultados_por_mes.items()):
+        salida.append({
+            "anio": anio,
+            "mes": mes,
+            "nombre_mes": meses_es.get(mes, str(mes)),
+            "ingresos": round(valores["ingresos"], 2),
+            "gastos": round(valores["gastos"], 2),
+            "beneficio": round(valores["beneficio"], 2),
+        })
+
+    return salida

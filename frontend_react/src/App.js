@@ -8,6 +8,10 @@ import ClientesList from "./pages/ClientesList";
 import StockList from "./pages/StockList";
 import Login from "./pages/Login";
 
+// 🆕 Importamos los dashboards
+import DashboardFinanzas from "./pages/DashboardFinanzas";
+import DashboardEstadisticas from "./pages/DashboardEstadisticas";
+
 function App() {
   const [user, setUser] = React.useState(
     localStorage.getItem("token") && localStorage.getItem("username")
@@ -21,13 +25,10 @@ function App() {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          // Llama a un endpoint protegido de tu backend
           await api.get("/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
-          // Token válido → no hacemos nada
         } catch (err) {
-          // Token inválido o expirado → cerrar sesión
           localStorage.removeItem("token");
           localStorage.removeItem("username");
           setUser(null);
@@ -56,12 +57,18 @@ function App() {
         {/* Layout y rutas protegidas */}
         <Route
           path="/"
-          element={user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          element={
+            user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          }
         >
-          <Route index element={<PedidosList />} />           
-          <Route path="pedidos" element={<PedidosList />} />  
+          <Route index element={<PedidosList />} />
+          <Route path="pedidos" element={<PedidosList />} />
           <Route path="clientes" element={<ClientesList />} />
-          <Route path="stock" element={<StockList />} />  {/* NUEVO */}
+          <Route path="stock" element={<StockList />} />
+
+          {/* 🆕 Dashboards */}
+          <Route path="dashboard/finanzas" element={<DashboardFinanzas />} />
+          <Route path="dashboard/estadisticas" element={<DashboardEstadisticas />} />
         </Route>
 
         {/* Cualquier otra ruta */}

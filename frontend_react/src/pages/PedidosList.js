@@ -162,7 +162,7 @@ function PedidosList() {
         cols.push({
           accessorKey: "stock",
           id: "stock",
-          header: "Stock",
+          header: "STOCK",
           Cell: ({ row }) => (
             <Button
               variant="outlined"

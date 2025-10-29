@@ -51,7 +51,7 @@ function StockList() {
     try {
       const res = await api.get("/stock", { headers: { Authorization: `Bearer ${token}` } });
       const data = res.data;
-
+      //console.log("DATA",data)
       if (data.length > 0) {
         const order = [
           "referencia", "tipo", "formato", "fecha_actual", "cantidad_total", "cantidad",
