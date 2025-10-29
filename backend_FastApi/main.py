@@ -224,6 +224,9 @@ class StockCreate(BaseModel):
     fecha_compra: Optional[date] = None
     precio: float
     detalles: Optional[Dict] = {}
+    
+    class Config:
+        orm_mode = True
 
 class PedidoStockResponse(BaseModel):
     referencia: str
@@ -531,7 +534,7 @@ def listar_stock(db: Session = Depends(get_db), current_user: str = Depends(get_
 
 
 
-@app.post("/stock/", response_model=dict)
+@app.post("/stock/", response_model=StockBase)
 def crear_stock(stock: StockCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
     # Si no viene detalles en el payload, aseguramos que sea un dict vacío
     if not hasattr(stock, "detalles") or stock.detalles is None:
@@ -541,7 +544,7 @@ def crear_stock(stock: StockCreate, db: Session = Depends(get_db), current_user:
     db.add(db_stock)
     db.commit()
     db.refresh(db_stock)
-    return {"message": "Stock creado correctamente"}
+    return db_stock
 
 
 @app.put("/stock/{stock_id}", response_model=dict)

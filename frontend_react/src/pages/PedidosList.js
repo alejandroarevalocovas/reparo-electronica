@@ -294,6 +294,7 @@ function PedidosList() {
       ["fecha_entrada", "fecha_reparacion", "fecha_pagado"].forEach((f) => {
         if (payload[f]) payload[f] = dayjs(payload[f]).format("YYYY-MM-DD");
       });
+      //console.log("PAYLOADDDDD",payload)
 
       if (editingPedido) {
         await api.put(`/pedidos/${editingPedido.id}`, payload, {
@@ -487,7 +488,8 @@ function PedidosList() {
     });
 
     // 🔥 Añadir nuevo stock a la lista de stock disponible (sin cerrar el modal de asignar stock)
-    setStockDisponible((prev) => [...prev, nuevoStock]);
+    const nuevoStockCreado = res.data;
+    setStockDisponible((prev) => [...prev, nuevoStockCreado]);
 
     // Mostrar mensaje de éxito
     setSnackbar({
