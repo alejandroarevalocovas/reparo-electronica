@@ -580,7 +580,12 @@ function PedidosList() {
       {/* Modal Crear/Editar Pedido */}
       <Dialog 
         open={openPedidoModal} 
-        onClose={() => setOpenPedidoModal(false)} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenPedidoModal(false);
+        }}
         maxWidth="md" 
         fullWidth 
         PaperProps={{ sx: { borderRadius: 3 } }}
@@ -966,7 +971,12 @@ function PedidosList() {
     {/* Modal Nuevo Cliente */}
     <Dialog 
       open={openClienteModal} 
-      onClose={() => setOpenClienteModal(false)} 
+      onClose={(event, reason) => {
+        // Evita cierre al hacer click fuera del modal
+        if (reason === "backdropClick") return;
+
+        setOpenClienteModal(false);
+      }}
       maxWidth="sm" 
       fullWidth 
       PaperProps={{ sx: { borderRadius: 3 } }}
@@ -1119,7 +1129,18 @@ function PedidosList() {
 
 
       {/* Modal Ver Stock */}
-      <Dialog open={openStockModal} onClose={() => setOpenStockModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog 
+        open={openStockModal} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenStockModal(false);
+        }}
+        maxWidth="sm" 
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
         <DialogTitle>Stock del Pedido #{stockModalPedido?.numero_serie || ""}</DialogTitle>
         <DialogContent>
           {stockItems.length > 0 ? (
@@ -1151,7 +1172,12 @@ function PedidosList() {
       {/* Modal Asignar/Editar Stock */}
       <Dialog
         open={openAsignarStockModal}
-        onClose={() => setOpenAsignarStockModal(false)}
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenAsignarStockModal(false);
+        }}
         maxWidth="xl"
         fullWidth
       >
@@ -1196,7 +1222,7 @@ function PedidosList() {
                   ]}
                   data={stockAsignado}
                   enableColumnFilters
-                  enableGlobalFilter={false}
+                  enableGlobalFilter={true}
                   enablePagination={false}
                   muiTableContainerProps={{ sx: { maxHeight: 500, overflowY: "auto" } }}
                   layoutMode="grid"
@@ -1251,7 +1277,7 @@ function PedidosList() {
                   ]}
                   data={stockDisponible}
                   enableColumnFilters
-                  enableGlobalFilter={false}
+                  enableGlobalFilter={true}
                   enablePagination={false}
                   muiTableContainerProps={{ sx: { maxHeight: 500, overflowY: "auto" } }}
                   layoutMode="grid"
@@ -1281,7 +1307,12 @@ function PedidosList() {
       {/* Modal Nuevo Stock */}
       <Dialog
         open={openNuevoStockModal}
-        onClose={() => setOpenNuevoStockModal(false)}
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenNuevoStockModal(false);
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -1347,7 +1378,12 @@ function PedidosList() {
        {/* Modal info estado */}
       <Dialog
         open={openEstadoInfo}
-        onClose={() => setOpenEstadoInfo(false)}
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenEstadoInfo(false);
+        }}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}

@@ -143,7 +143,12 @@ function ClientesList() {
       {/* Modal Crear/Editar Cliente */}
       <Dialog 
         open={openClienteModal} 
-        onClose={() => setOpenClienteModal(false)} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenClienteModal(false);
+        }}
         maxWidth="sm" 
         fullWidth 
         PaperProps={{ sx: { borderRadius: 3 } }}
@@ -254,7 +259,12 @@ function ClientesList() {
     {/* Modal confirmacion eliminacion Cliente */}
       <Dialog
         open={openDeleteConfirm}
-        onClose={() => setOpenDeleteConfirm(false)}
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenDeleteConfirm(false);
+        }}
         maxWidth="xs"
         fullWidth
         >

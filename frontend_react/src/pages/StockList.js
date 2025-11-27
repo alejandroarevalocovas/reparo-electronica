@@ -248,7 +248,17 @@ function StockList() {
       </Box>
 
       {/* Modal Crear/Editar Stock */}
-      <Dialog open={openStockModal} onClose={() => setOpenStockModal(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={openStockModal} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenStockModal(false);
+        }}
+        maxWidth="md" 
+        fullWidth
+      >
         <DialogTitle>{editingStock ? "Editar Stock" : "Nuevo Stock"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
@@ -365,7 +375,12 @@ function StockList() {
     {/* Modal confirmacion eliminacion stock */}
       <Dialog
         open={openDeleteConfirm}
-        onClose={() => setOpenDeleteConfirm(false)}
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenDeleteConfirm(false);
+        }}
         maxWidth="xs"
         fullWidth
         >
@@ -392,7 +407,17 @@ function StockList() {
 
 
       {/* Modal Detalles */}
-      <Dialog open={openDetallesModal} onClose={() => setOpenDetallesModal(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={openDetallesModal} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenDetallesModal(false);
+        }}
+        maxWidth="md" 
+        fullWidth
+      >
         <DialogTitle>Detalles del Stock</DialogTitle>
         <DialogContent>{renderDetallesForm()}</DialogContent>
         <DialogActions>
@@ -415,7 +440,16 @@ function StockList() {
       </Dialog>
 
       {/* Modal Ver Detalles */}
-      <Dialog open={openVerDetalles} onClose={() => setOpenVerDetalles(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={openVerDetalles} 
+        onClose={(event, reason) => {
+          // Evita cierre al hacer click fuera del modal
+          if (reason === "backdropClick") return;
+
+          setOpenVerDetalles(false);
+        }}
+        maxWidth="sm" fullWidth
+      >
         <DialogTitle>Detalles del Stock</DialogTitle>
         <DialogContent>
           {Object.keys(detallesView || {}).length === 0 ? (
