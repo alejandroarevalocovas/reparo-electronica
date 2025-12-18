@@ -413,10 +413,12 @@ function PedidosList() {
       if (pedido) {
         const res = await api.get(`/pedido_stock/${pedido.id}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = Array.isArray(res.data) ? res.data : [];
+        //console.log("DATA stock asignado",data)
         const mapped = data.map((s) => {
           const stockItem = stockData.find(sd => sd.referencia === s.referencia && sd.tipo === s.tipo);
           return { ...s, stock_id: stockItem?.id || null };
         });
+        //console.log("DATA stock asignado mapped",mapped)
         setStockAsignado(mapped);
       } else {
         setStockAsignado([]);
@@ -443,7 +445,7 @@ function PedidosList() {
           s.stock_id === item.id ? { ...s, cantidad_usada: s.cantidad_usada + cantidad } : s
         );
       }
-      return [...prev, { stock_id: item.id, referencia: item.referencia, tipo: item.tipo, cantidad_usada: cantidad }];
+      return [...prev, { stock_id: item.id, referencia: item.referencia, tipo: item.tipo, formato: item.formato, ubicacion: item.ubicacion,cantidad_usada: cantidad }];
     });
   };
 

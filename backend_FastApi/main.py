@@ -231,6 +231,8 @@ class StockCreate(BaseModel):
 class PedidoStockResponse(BaseModel):
     referencia: str
     tipo: str | None = None
+    formato: Optional[str] = None
+    ubicacion: Optional[str] = None
     cantidad_usada: int
 
     class Config:
@@ -350,6 +352,8 @@ def get_stock_pedido(pedido_id: int, db: Session = Depends(get_db), current_user
         db.query(
             Stock.referencia.label("referencia"),
             Stock.tipo.label("tipo"),
+            Stock.formato.label("formato"),
+            Stock.ubicacion.label("ubicacion"),
             PedidoStock.cantidad_usada.label("cantidad_usada")
         )
         .join(Stock, PedidoStock.stock_id == Stock.id)
@@ -357,7 +361,7 @@ def get_stock_pedido(pedido_id: int, db: Session = Depends(get_db), current_user
         .all()
     )
     stock_list = [
-        {"referencia": r.referencia, "tipo": r.tipo, "cantidad_usada": r.cantidad_usada}
+        {"referencia": r.referencia, "tipo": r.tipo, "formato": r.formato, "ubicacion": r.ubicacion, "cantidad_usada": r.cantidad_usada}
         for r in resultados
     ]
     return stock_list
