@@ -1245,6 +1245,8 @@ function PedidosList() {
                   columns={[
                     { accessorKey: "referencia", header: "Referencia", enableColumnFilter: true },
                     { accessorKey: "tipo", header: "Tipo", enableColumnFilter: true },
+                    { accessorKey: "formato", header: "Formato", enableColumnFilter: true },
+                    { accessorKey: "ubicacion", header: "Ubicación", enableColumnFilter: true },
                     { accessorKey: "cantidad", header: "Cantidad disponible", enableColumnFilter: true },
                     {
                       id: "cantidad_a_asignar",
@@ -1322,6 +1324,8 @@ function PedidosList() {
             {[
               { key: "referencia", label: "Referencia", required: true },
               { key: "tipo", label: "Tipo", required: true },
+              { key: "formato", label: "Formato"},
+              { key: "ubicacion", label: "Ubicación"},
               { key: "cantidad", label: "Cantidad Disponible", required: true },
               { key: "cantidad_total", label: "Cantidad Comprada", required: true },
               { key: "precio", label: "Precio (€)", required: true },
