@@ -1199,6 +1199,8 @@ function PedidosList() {
                   columns={[
                     { accessorKey: "referencia", header: "Referencia", enableColumnFilter: true },
                     { accessorKey: "tipo", header: "Tipo", enableColumnFilter: true },
+                    { accessorKey: "formato", header: "Formato", enableColumnFilter: true },
+                    { accessorKey: "ubicacion", header: "Ubicación", enableColumnFilter: true },
                     { accessorKey: "cantidad_usada", header: "Cantidad", enableColumnFilter: true },
                     {
                       id: "acciones",
