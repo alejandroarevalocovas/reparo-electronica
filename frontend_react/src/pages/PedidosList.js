@@ -108,7 +108,7 @@ function PedidosList() {
       //console.log("DATAAAAAAAAAAA",res.data)
       if (data.length > 0) {
         const cols = Object.keys(data[0])
-          .filter((key) => key !== "id" && key !== "cliente_id" && key != "precio_total")
+          .filter((key) => key !== "cliente_id" && key != "precio_total") //key !== "id" &&
           .map((key) => {
             let Cell = undefined;
 
@@ -178,6 +178,7 @@ function PedidosList() {
         });
 
         const COLUMN_ORDER = [
+          "id",
           "fecha_entrada",
           "equipo",
           "numero_serie",
@@ -553,7 +554,7 @@ function PedidosList() {
                   },
                 })}
                initialStateSorting={{
-                  sorting: [{ id: "fecha_entrada", desc: true }],
+                  sorting: [{ id: "fecha_entrada", desc: true },{ id: "id", desc: true },  ],
                 }}
         />
       </Box>
