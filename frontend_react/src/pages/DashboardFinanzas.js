@@ -47,10 +47,10 @@ function DashboardFinanzas() {
         const mesesPedidos = {};
         let totalIngresos = 0;
         let totalGastos = 0;
-
+        //console.log("PEDIDOS CERRADOS",pedidosCerrados[0])
         pedidosCerrados.forEach(p => {
-          if (!p.fecha_reparacion) return;
-          const fecha = new Date(p.fecha_reparacion);
+          if (!p.fecha_pagado) return;
+          const fecha = new Date(p.fecha_pagado);
           const mesKey = `${fecha.getMonth()}-${fecha.getFullYear()}`;
           if (!mesesPedidos[mesKey]) mesesPedidos[mesKey] = { ingresos: 0, gastos: 0, beneficio: 0 };
 
