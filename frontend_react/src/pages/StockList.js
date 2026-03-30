@@ -32,6 +32,8 @@ function StockList() {
   const [newStock, setNewStock] = useState({ fecha_actual: dayjs().format("YYYY-MM-DD"), detalles: {} });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [touchedFields, setTouchedFields] = useState({});
+  const [openDuplicateConfirm, setOpenDuplicateConfirm] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   // --- Modal detalles ---
   const [openDetallesModal, setOpenDetallesModal] = useState(false);
@@ -364,6 +366,19 @@ function StockList() {
                 }
               }
 
+               // 🔴 NUEVO: comprobar duplicado SOLO al crear
+              if (!editingStock) {
+                const existe = stock.some(
+                  (s) => s.referencia?.toLowerCase().trim() === newStock.referencia?.toLowerCase().trim()
+                );
+
+                if (existe) {
+                  setPendingSubmit(true);
+                  setOpenDuplicateConfirm(true);
+                  return;
+                }
+              }
+
               handleSubmitStock();
             }}
           >
@@ -469,6 +484,44 @@ function StockList() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenVerDetalles(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal referencia duplicada */}
+      <Dialog
+        open={openDuplicateConfirm}
+        onClose={(event, reason) => {
+          if (reason === "backdropClick") return;
+          setOpenDuplicateConfirm(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Referencia duplicada</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Ya existe un stock con la referencia "{newStock?.referencia}".
+            <br />
+            ¿Quieres crearlo igualmente?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDuplicateConfirm(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => {
+              setOpenDuplicateConfirm(false);
+              if (pendingSubmit) {
+                handleSubmitStock();
+                setPendingSubmit(false);
+              }
+            }}
+          >
+            Crear igualmente
+          </Button>
         </DialogActions>
       </Dialog>
 

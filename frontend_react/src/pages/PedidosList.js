@@ -179,6 +179,7 @@ function PedidosList() {
 
         const COLUMN_ORDER = [
           "id",
+          "entrega_ref",
           "fecha_entrada",
           "equipo",
           "numero_serie",
@@ -610,6 +611,19 @@ function PedidosList() {
                 required
                 error={touchedFields.numero_serie && !newPedido.numero_serie}
                 helperText={touchedFields.numero_serie && !newPedido.numero_serie ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
+            {/* Referencia de entrega */}
+            <Grid item xs={6}>
+              <TextField
+                label="Referencia de entrega"
+                name="entrega_ref"
+                fullWidth
+                value={newPedido.entrega_ref || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
               />
             </Grid>
 
@@ -1208,20 +1222,45 @@ function PedidosList() {
                     {
                       id: "acciones",
                       header: "Acciones",
-                      Cell: ({ row }) => (
-                        <Box display="flex" gap={1}>
-                          <Button size="small" onClick={() => handleSubtractStock(row.original, 1)}>
-                            -
-                          </Button>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleRemoveStock(row.original.stock_id)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      ),
+                      Cell: ({ row }) => {
+                        const item = row.original;
+
+                        // Buscar el stock real en disponibles
+                        const stockDisponibleItem = stockDisponible.find(
+                          (s) => s.id === item.stock_id
+                        );
+
+                        return (
+                          <Box display="flex" gap={1}>
+                            {/* ➕ AÑADIR */}
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => {
+                                if (stockDisponibleItem) {
+                                  handleAddStock(stockDisponibleItem, 1);
+                                }
+                              }}
+                            >
+                              +
+                            </Button>
+
+                            {/* ➖ RESTAR */}
+                            <Button size="small" onClick={() => handleSubtractStock(item, 1)}>
+                              -
+                            </Button>
+
+                            {/* ❌ ELIMINAR */}
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleRemoveStock(item.stock_id)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Box>
+                        );
+                      },
                       enableColumnFilter: false,
                     },
                   ]}
