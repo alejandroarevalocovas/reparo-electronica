@@ -5,7 +5,7 @@ from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Numeric, Text, ForeignKey, Date, Boolean, func
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from passlib.hash import bcrypt
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -63,13 +63,15 @@ class Pedido(Base):
     tiempo_reparacion = Column(Integer, nullable=True)
     precio = Column(Numeric(10, 2), nullable=False)
     precio_total = Column(Numeric(10, 2), nullable=True)
-    tipo_cobro = Column(Text, nullable=True)
+    tipo_cobro = Column(ARRAY(Text), nullable=True)
+    precio_desglose = Column(JSONB, nullable=True)
     comentarios = Column(Text, nullable=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
     numero_serie = Column(Text, nullable=False)
     part_number = Column(Text, nullable=True)
     garantia = Column(Boolean, nullable=True)
     tiempo_garantia = Column(Integer, nullable=True)
+    entrega_ref = Column(Text, nullable=True)
     
 
     cliente = relationship("Cliente")
@@ -134,7 +136,8 @@ class PedidoBase(BaseModel):
     precio: float
     precio_total: float
     pendiente_pago: Optional[float] = None
-    tipo_cobro: Optional[str] = None
+    tipo_cobro: Optional[List[str]] = None
+    precio_desglose: Optional[Dict[str, float]] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
     nombre_cliente: str
@@ -143,6 +146,7 @@ class PedidoBase(BaseModel):
     cobro_neto: Optional[float] = None
     garantia: Optional[bool] = None
     tiempo_garantia: Optional[int] = None
+    entrega_ref: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -162,12 +166,14 @@ class PedidoCreate(BaseModel):
     tiempo_reparacion: Optional[int] = None
     precio: float
     precio_total: float
-    tipo_cobro: Optional[str] = None
+    tipo_cobro: Optional[List[str]] = None
+    precio_desglose: Optional[Dict[str, float]] = None
     fecha_pagado: Optional[date] = None
     cliente_id: int
     comentarios: Optional[str] = None
     garantia: Optional[bool] = None
     tiempo_garantia: Optional[int] = None
+    entrega_ref: Optional[str] = None
     stocks: Optional[List[PedidoStockAsignacion]] = None  # <-- lista de stock al crear
 
 class ClienteBase(BaseModel):
@@ -331,12 +337,14 @@ def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(ge
                 (float(pedido.precio_total) if pedido.precio_total else 0) - float(pedido.precio), 2
             ),
             "tipo_cobro": pedido.tipo_cobro,
+            "precio_desglose": pedido.precio_desglose,
             "comentarios": pedido.comentarios,
             "cliente_id": pedido.cliente_id,
             "numero_serie": pedido.numero_serie,
             "part_number": pedido.part_number,
             "garantia": pedido.garantia,
             "tiempo_garantia": pedido.tiempo_garantia,
+            "entrega_ref": pedido.entrega_ref,
             "precio_stock": round(precio_stock_total, 2),
             "cobro_neto": round(
                 (float(pedido.precio) if pedido.precio else 0) - precio_stock_total, 2

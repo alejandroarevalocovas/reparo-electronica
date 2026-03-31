@@ -14,6 +14,7 @@ import {
   Autocomplete,
   Snackbar,
   Alert,
+  Chip,
   Box,
   Typography,
   Paper,
@@ -142,6 +143,29 @@ function PedidosList() {
                   return diffDays === 1 ? "1 día" : `${diffDays} días`;
                 }
               };
+            } else if (key === "tipo_cobro") {
+              Cell = ({ row }) => {
+                const value = row.original.tipo_cobro;
+
+                if (!value) return "";
+
+                if (Array.isArray(value)) {
+                  return value.join(" y ");
+                }
+
+                return value; // fallback por si viene string antiguo
+              };
+            }
+            else if (key === "precio_desglose") {
+              Cell = ({ row }) => {
+                const value = row.original.precio_desglose;
+                if (!value) return "";
+
+                // value es un objeto { cash: 50, bizum: 30 }
+                return Object.entries(value)
+                  .map(([tipo, cantidad]) => `${tipo}: ${cantidad.toFixed(2)} €`)
+                  .join(", "); // puedes poner <br /> si quieres multilínea
+              };
             }
 
 
@@ -192,6 +216,7 @@ function PedidosList() {
           "tiempo_reparacion",
           "precio",
           "tipo_cobro",
+          "precio_desglose",
           "pendiente_pago",
           "garantia",
           "tiempo_garantia",
@@ -549,11 +574,32 @@ function PedidosList() {
                onRowClick={handleRowClick} 
                compact
                onRowContextMenu={handleRowRightClick} 
-               rowPropsBackground={(row) => ({
+               rowPropsBackground={(row) => {
+                let backgroundColor = "inherit";
+
+                // Fila en garantía → amarillo suave
+                if (row.original.garantia) {
+                  backgroundColor = "#ebdd5cff"; // amarillo claro (MUI yellow[100])
+                }
+                // Fila entregado/cerrado con pendiente de pago > 0 → naranja suave
+                else if (
+                  row.original.estado === "Entregado / Cerrado" &&
+                  row.original.pendiente_pago > 0
+                ) {
+                  backgroundColor = "#fb6060"; // naranja claro (MUI orange[100])
+                }
+
+                return {
                   sx: {
-                    backgroundColor: row.original.garantia ? "#ebdd5cff" : "inherit",
+                    backgroundColor,
                   },
-                })}
+                };
+              }}
+              //  rowPropsBackground={(row) => ({
+              //     sx: {
+              //       backgroundColor: row.original.garantia ? "#ebdd5cff" : "inherit",
+              //     },
+              //   })}
                initialStateSorting={{
                   sorting: [{ id: "fecha_entrada", desc: true },{ id: "id", desc: true },  ],
                 }}
@@ -787,20 +833,79 @@ function PedidosList() {
             <TextField
               select
               label="Tipo cobro"
-              name="tipo_cobro"
-              value={newPedido.tipo_cobro || ""}
-              onChange={handleChange}
+              value={newPedido.tipo_cobro || []}
+              onChange={(e) =>
+                setNewPedido({
+                  ...newPedido,
+                  tipo_cobro: e.target.value,
+                })
+              }
               fullWidth
               margin="dense"
               size="small"
-              sx={{ minWidth: '250px' }}
+              sx={{ minWidth: "250px" }}
+              slotProps={{
+                select: {
+                  multiple: true,
+                  renderValue: (selected) => (
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {selected.map((value) => (
+                        <Chip key={value} label={value} />
+                      ))}
+                    </Box>
+                  ),
+                },
+              }}
             >
-              <MenuItem value="">Seleccione tipo de cobro</MenuItem>
-                {TIPO_COBRO.map((cat) => (
-                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+              {TIPO_COBRO.map((cat) => (
+                <MenuItem key={cat} value={cat}>
+                  {cat}
+                </MenuItem>
               ))}
             </TextField>
           </Grid>
+
+          {/* Precio desglose */}
+          {newPedido.tipo_cobro?.length > 1 && newPedido.precio ? (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Precio dividido por tipo de cobro
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {newPedido.tipo_cobro.map((tipo) => (
+                  <TextField
+                    key={tipo}
+                    label={tipo}
+                    type="number"
+                    size="small"
+                    value={newPedido.precio_desglose?.[tipo] ?? ""}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      setNewPedido({
+                        ...newPedido,
+                        precio_desglose: {
+                          ...newPedido.precio_desglose,
+                          [tipo]: value,
+                        },
+                      });
+                    }}
+                    sx={{ width: "120px" }}
+                    slotProps={{
+                      input: {
+                        // aquí van props nativas del <input>
+                        min: 0,
+                        step: 0.01,
+                      },
+                      endAdornment: <Typography sx={{ ml: 0.5 }}>€</Typography>,
+                    }}
+                  />
+                ))}
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Total: {newPedido.tipo_cobro.reduce((sum, t) => sum + (newPedido.precio_desglose?.[t] || 0), 0).toFixed(2)} € (Debe ser igual a {newPedido.precio} €)
+              </Typography>
+            </Grid>
+          ) : null}
 
             {/* Fecha Pagado */}
             <Grid item xs={6}>
