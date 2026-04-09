@@ -34,6 +34,7 @@ function StockList() {
   const [touchedFields, setTouchedFields] = useState({});
   const [openDuplicateConfirm, setOpenDuplicateConfirm] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [referenciaDuplicada, setReferenciaDuplicada] = useState(false);
 
   // --- Modal detalles ---
   const [openDetallesModal, setOpenDetallesModal] = useState(false);
@@ -186,6 +187,15 @@ function StockList() {
     copy.splice(index, 1);
     setDetallesArray(copy);
   };
+  const checkReferenciaDuplicada = (value) => {
+    const existe = stock.some(
+      (s) =>
+        s.referencia?.toLowerCase().trim() ===
+        value.toLowerCase().trim()
+    );
+
+    setReferenciaDuplicada(existe && !editingStock);
+  };
 
   const renderDetallesForm = () => (
     <Box sx={{ mt: 1 }}>
@@ -309,18 +319,36 @@ function StockList() {
                     name={field.key}
                     fullWidth
                     value={newStock[field.key] || ""}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                    handleChange(e); // 🔹 SIEMPRE se ejecuta
+
+                    if (field.key === "referencia") {
+                      checkReferenciaDuplicada(e.target.value); // 🔹 SOLO extra para referencia
+                    }
+                  }}
+                    // onChange={handleChange}
                     margin="dense"
                     size="small"
                     multiline={field.multiline || false}
                     minRows={field.minRows || 1}
                     required={field.required || false}
-                    error={touchedFields[field.key] && field.required && !newStock[field.key]}
+                    error={
+                      (field.key === "referencia" && referenciaDuplicada) ||
+                      (touchedFields[field.key] && field.required && !newStock[field.key])
+                    }
                     helperText={
-                      touchedFields[field.key] && field.required && !newStock[field.key]
+                      field.key === "referencia" && referenciaDuplicada
+                        ? "Ya existe esta referencia"
+                        : touchedFields[field.key] && field.required && !newStock[field.key]
                         ? "Este campo es obligatorio"
                         : ""
                     }
+                    // error={touchedFields[field.key] && field.required && !newStock[field.key]}
+                    // helperText={
+                    //   touchedFields[field.key] && field.required && !newStock[field.key]
+                    //     ? "Este campo es obligatorio"
+                    //     : ""
+                    // }
                     sx={ field.sx ? { minWidth: field.sx } : {}}
                   />
                 )}
