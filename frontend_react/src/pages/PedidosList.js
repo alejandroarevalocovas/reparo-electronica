@@ -90,6 +90,7 @@ function PedidosList() {
 
   //Stock nuevo
   const [openNuevoStockModal, setOpenNuevoStockModal] = useState(false);
+  const [stockInicialCargado, setStockInicialCargado] = useState(false);
   const [nuevoStock, setNuevoStock] = useState({
     referencia: "",
     tipo: "",
@@ -341,6 +342,7 @@ function PedidosList() {
       setEditingPedido(null);
       setStockAsignado([]);
       setStockDisponible([]);
+      setStockInicialCargado(false);
       setTouchedFields({}); // reset touched fields después de guardar
     } catch (err) {
       console.error(err);
@@ -432,24 +434,34 @@ function PedidosList() {
   /** ---------------- Modal Asignar/Editar Stock ---------------- **/
   const handleOpenAsignarStock = async (pedido = null) => {
     try {
+      // Siempre recargamos el stock disponible del servidor (cantidades actualizadas)
       const resStock = await api.get("/stock/", { headers: { Authorization: `Bearer ${token}` } });
       const stockData = resStock.data.map(s => ({ ...s }));
-      setStockDisponible(stockData);
 
-
-      if (pedido) {
-        const res = await api.get(`/pedido_stock/${pedido.id}`, { headers: { Authorization: `Bearer ${token}` } });
-        const data = Array.isArray(res.data) ? res.data : [];
-        //console.log("DATA stock asignado",data)
-        const mapped = data.map((s) => {
-          const stockItem = stockData.find(sd => sd.referencia === s.referencia && sd.tipo === s.tipo);
-          return { ...s, stock_id: stockItem?.id || null };
-        });
-        //console.log("DATA stock asignado mapped",mapped)
-        setStockAsignado(mapped);
-      } else {
-        setStockAsignado([]);
+      // Si ya habíamos cargado el stock asignado en esta sesión del modal de pedido,
+      // no lo pisamos — respetamos los cambios locales del usuario
+      if (!stockInicialCargado) {
+        if (pedido) {
+          const res = await api.get(`/pedido_stock/${pedido.id}`, { headers: { Authorization: `Bearer ${token}` } });
+          const data = Array.isArray(res.data) ? res.data : [];
+          const mapped = data.map((s) => {
+            const stockItem = stockData.find(sd => sd.referencia === s.referencia && sd.tipo === s.tipo);
+            return { ...s, stock_id: stockItem?.id || null };
+          });
+          setStockAsignado(mapped);
+        } else {
+          setStockAsignado([]);
+        }
+        setStockInicialCargado(true);
       }
+
+      // Recalcular disponible descontando lo ya asignado localmente
+      const stockConDescuento = stockData.map(s => {
+        const asignado = stockAsignado.find(a => a.stock_id === s.id);
+        return asignado ? { ...s, cantidad: s.cantidad - asignado.cantidad_usada } : s;
+      });
+      setStockDisponible(stockConDescuento);
+
       setOpenAsignarStockModal(true);
     } catch (err) {
       console.error(err);
@@ -633,7 +645,7 @@ function PedidosList() {
         onClose={(event, reason) => {
           // Evita cierre al hacer click fuera del modal
           if (reason === "backdropClick") return;
-
+          setStockInicialCargado(false);
           setOpenPedidoModal(false);
         }}
         maxWidth="md" 
@@ -1033,7 +1045,11 @@ function PedidosList() {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpenPedidoModal(false)}>Cancelar</Button>
+          <Button onClick={() => {setStockInicialCargado(false) 
+                                  setOpenPedidoModal(false)
+                                  }}>
+              Cancelar
+          </Button>
           {editingPedido && (
             <Button
               variant="outlined"
