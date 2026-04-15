@@ -246,6 +246,7 @@ function PedidosList() {
     const fetchClientes = async () => {
       try {
         const res = await api.get("/clientes/", { headers: { Authorization: `Bearer ${token}` } });
+        //console.log("CLIENTES",res.data)
         setClientes(res.data);
       } catch (err) {
         console.error(err);
@@ -757,11 +758,31 @@ function PedidosList() {
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Autocomplete
                   options={clientes}
-                  getOptionLabel={(option) => option.nombre}
-                  value={clientes.find((c) => c.id === newPedido.cliente_id) || null}
-                  onChange={(e, value) =>
-                    setNewPedido({ ...newPedido, cliente_id: value ? value.id : null })
+                  getOptionLabel={(option) =>
+                    typeof option === "string"
+                      ? option
+                      : option.nombre?.trim() ?? ""
                   }
+                  value={clientes.find((c) => c.id === newPedido.cliente_id) || null}
+                  freeSolo={false}
+                  filterSelectedOptions
+                  includeInputInList={false}
+                  onChange={(e, value) => {
+                    setNewPedido({ ...newPedido, cliente_id: value ? value.id : null });
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value?.id}
+                  filterOptions={(options, state) => {
+                    const input = state.inputValue?.trim().toLowerCase();
+
+                    if (!input) return [];
+
+                    return options.filter((o) => {
+                      const nombre = o.nombre?.trim().toLowerCase();
+                      const match = nombre.startsWith(input);
+
+                      return match;
+                    });
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
