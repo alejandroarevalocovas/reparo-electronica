@@ -69,6 +69,7 @@ function PedidosList() {
   // Modal asignar/editar stock
   const [openAsignarStockModal, setOpenAsignarStockModal] = useState(false);
   const [stockAsignado, setStockAsignado] = useState([]);
+  const [copiarStockGarantia, setCopiarStockGarantia] = useState(false);
   const [stockDisponible, setStockDisponible] = useState([]);
 
   //Modal info estado
@@ -220,6 +221,7 @@ function PedidosList() {
           "precio_desglose",
           "pendiente_pago",
           "garantia",
+          "ref_garantia",
           "tiempo_garantia",
           "precio_stock",
           "cobro_neto",
@@ -323,7 +325,7 @@ function PedidosList() {
       ["fecha_entrada", "fecha_reparacion", "fecha_pagado"].forEach((f) => {
         if (payload[f]) payload[f] = dayjs(payload[f]).format("YYYY-MM-DD");
       });
-      //console.log("PAYLOADDDDD",payload)
+      // console.log("PAYLOADDDDD",payload)
 
       if (editingPedido) {
         await api.put(`/pedidos/${editingPedido.id}`, payload, {
@@ -344,6 +346,7 @@ function PedidosList() {
       setStockAsignado([]);
       setStockDisponible([]);
       setStockInicialCargado(false);
+      //setCopiarStockGarantia(false);
       setTouchedFields({}); // reset touched fields después de guardar
     } catch (err) {
       console.error(err);
@@ -397,10 +400,45 @@ function PedidosList() {
       precio: pedidoToCopy.precio ?? 0,
     });
 
+    //setCopiarStockGarantia(false);
     setEditingPedido(null);
     setStockAsignado([]);
     setOpenPedidoModal(true);
   };
+
+  // const handleCopyPedidoGarantia = async (pedido) => {
+  //   const { id, fecha_reparacion, fecha_pagado, ...pedidoToCopy } = pedido;
+  //   // console.log("PEDIDO",pedido)
+  //   setNewPedido({
+  //     ...pedidoToCopy,
+  //     cliente_id: pedido.cliente_id,
+  //     precio: pedidoToCopy.precio ?? 0,
+  //     garantia: true
+  //   });
+
+  //   try {
+  //     // 👇 cargar stock original del pedido
+  //     const res = await api.get(`/pedido_stock/${pedido.id}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     const stockOriginal = Array.isArray(res.data) ? res.data : [];
+
+  //     setStockAsignado(stockOriginal);
+  //     setCopiarStockGarantia(true);
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error al copiar stock del pedido original",
+  //       severity: "error",
+  //     });
+  //   }
+
+  //   setEditingPedido(null);
+  //   setOpenPedidoModal(true);
+  // };
 
 
 
@@ -441,6 +479,7 @@ function PedidosList() {
 
       // Si ya habíamos cargado el stock asignado en esta sesión del modal de pedido,
       // no lo pisamos — respetamos los cambios locales del usuario
+      // if (!stockInicialCargado && !copiarStockGarantia) {
       if (!stockInicialCargado) {
         if (pedido) {
           const res = await api.get(`/pedido_stock/${pedido.id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -638,6 +677,14 @@ function PedidosList() {
       >
         Crear nuevo pedido a partir de este
       </MenuItem>
+      {/* <MenuItem
+        onClick={() => {
+          handleCopyPedidoGarantia(contextPedido);
+          handleCloseContextMenu();
+        }}
+      >
+        Crear garantía a partir de este
+      </MenuItem> */}
     </Menu>
 
       {/* Modal Crear/Editar Pedido */}
@@ -648,6 +695,7 @@ function PedidosList() {
           if (reason === "backdropClick") return;
           setStockInicialCargado(false);
           setOpenPedidoModal(false);
+          //setCopiarStockGarantia(false)
         }}
         maxWidth="md" 
         fullWidth 
@@ -973,6 +1021,21 @@ function PedidosList() {
               </TextField>
             </Grid>
 
+            {/* Referencia Garantía */}
+            <Grid item xs={6}>
+              <TextField
+                label="Número garantía"
+                name="ref_garantia"
+                fullWidth
+                value={newPedido.ref_garantia || ""}
+                onChange={handleChange}
+                margin="dense"
+                size="small"
+                error={touchedFields.ref_garantia && !newPedido.ref_garantia}
+                helperText={touchedFields.ref_garantia && !newPedido.ref_garantia ? "Este campo es obligatorio" : ""}
+              />
+            </Grid>
+
             {/* Tiempo Garantía */}
             <Grid item xs={6}>
               <TextField
@@ -1068,6 +1131,7 @@ function PedidosList() {
         <DialogActions>
           <Button onClick={() => {setStockInicialCargado(false) 
                                   setOpenPedidoModal(false)
+                                  //setCopiarStockGarantia(false)
                                   }}>
               Cancelar
           </Button>

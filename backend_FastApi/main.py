@@ -72,7 +72,7 @@ class Pedido(Base):
     garantia = Column(Boolean, nullable=True)
     tiempo_garantia = Column(Integer, nullable=True)
     entrega_ref = Column(Text, nullable=True)
-    
+    ref_garantia = Column(Text, nullable=True)
 
     cliente = relationship("Cliente")
     stocks = relationship("PedidoStock", back_populates="pedido", cascade="all, delete-orphan")
@@ -147,6 +147,8 @@ class PedidoBase(BaseModel):
     garantia: Optional[bool] = None
     tiempo_garantia: Optional[int] = None
     entrega_ref: Optional[str] = None
+    ref_garantia: Optional[str] = None
+
 
     class Config:
         orm_mode = True
@@ -174,6 +176,7 @@ class PedidoCreate(BaseModel):
     garantia: Optional[bool] = None
     tiempo_garantia: Optional[int] = None
     entrega_ref: Optional[str] = None
+    ref_garantia: Optional[str] = None
     stocks: Optional[List[PedidoStockAsignacion]] = None  # <-- lista de stock al crear
 
 class ClienteBase(BaseModel):
@@ -345,6 +348,7 @@ def listar_pedidos(db: Session = Depends(get_db), current_user: str = Depends(ge
             "garantia": pedido.garantia,
             "tiempo_garantia": pedido.tiempo_garantia,
             "entrega_ref": pedido.entrega_ref,
+            "ref_garantia": pedido.ref_garantia,
             "precio_stock": round(precio_stock_total, 2),
             "cobro_neto": round(
                 (float(pedido.precio) if pedido.precio else 0) - precio_stock_total, 2
